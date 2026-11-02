@@ -12,8 +12,11 @@ It uses **3 AI helpers (agents)** to:
 > ⚠️ **Very important:** The AI only **gives advice**. A real HR person makes **every big decision**.
 > The AI can never reject a person, call a person, or send an interview invite on its own.
 
-The day-by-day plan, the limits and the checklist from the project PDF are in **[TASKS.md](TASKS.md)**.
-Short answers about how things work (like Blind Mode) are in **[info.md](info.md)**.
+The day-by-day plan, the limits and the checklist from the project PDF are in **[information/TASKS.md](information/TASKS.md)**.
+
+I built this project to learn, so I write the code myself. I keep two learning files:
+- **[information/problem.md](information/problem.md):** the problems I faced and how I solved them, for interview practice.
+- **[information/tips.md](information/tips.md):** my notes, useful code snippets and short answers about how things work (like Blind Mode).
 
 ---
 
@@ -149,6 +152,10 @@ What each level looks for:
 Leadership counts **only** if the resume says it clearly, like "Led a team of 5". A job title alone is not enough.
 
 HR can change these numbers for any job.
+
+#### The CV evaluation prompt template
+
+Agent 1 uses one **prompt template**. A prompt template is a form with blanks. The blanks are filled with the job level, what matters at that level, the skills, the job post and the resume. This way, every CV for a job is checked the same way.
 
 #### Every skill gets its own score
 
@@ -421,8 +428,10 @@ stateDiagram-v2
   `read → score → HR stop 1 → call → HR stop 2 → schedule → HR stop 3 → send`
 - At each **HR stop**, LangGraph uses `interrupt()`. This **pauses** everything until HR clicks a button. The app can't skip a stop.
 - LangGraph **saves its place** after every step (this is called a "checkpoint"). If the app crashes, it carries on from where it stopped and does **not** call or email anyone twice.
-- **LangChain** is how each agent talks to the AI. It uses `with_structured_output()` so the AI always answers in a neat, fixed shape.
-- With LangChain, I can switch the AI (Claude, OpenAI or Gemini) by changing one line in `.env`.
+- **LangChain** is how each agent talks to the AI. Each AI job is a simple **chain**: `prompt | llm | parser`. The `|` sign means "then".
+- It uses `with_structured_output()` so the AI always answers in a neat, fixed shape.
+- **LangGraph runs the big steps, and a chain does the AI work inside a step.** The code stays basic, and the features stay high level.
+- With LangChain, I can switch to another AI later by changing `.env` and adding that AI's package.
 
 ### What is saved (database tables)
 
@@ -451,18 +460,19 @@ stateDiagram-v2
 
 | Part | Tool | What it does |
 |---|---|---|
-| Language | Python 3.11+ | The coding language |
+| Language | Python 3.12 | The coding language |
+| Package manager | **uv** | Installs Python and the tools into `.venv` |
 | Screens | Streamlit | Makes the HR web pages |
 | Backend | FastAPI | The engine that runs everything |
 | Steps and HR stops | **LangGraph** | Controls the flow and waits for HR |
 | Talking to the AI | **LangChain** | Sends prompts and gets neat answers back |
-| AI model | Claude / OpenAI / Gemini | The "brain". Chosen in `.env` |
+| AI model | **Groq** (with `langchain-groq`) | The "brain". The model name is set in `.env` |
 | Checking data | Pydantic | Makes sure data has the right shape |
 | Login | bcrypt | Scrambles passwords so they're never saved as plain text |
-| Resume search (chat) | Chroma + embeddings | Finds resume parts that match HR's question (for the RAG chat) |
+| Resume search (chat) | Chroma + embeddings | Finds resume parts that match HR's question (for the RAG chat). Groq does not make embeddings, so this needs a separate tool, chosen on Day 10 |
 | Online CV form | *(to be chosen)* | Where candidates send their CV |
-| Database | **SQLite** + SQLAlchemy | Saves everything in one file. ✅ Decided |
-| Reading resumes | pdfplumber, python-docx | Pulls words out of PDF and Word files |
+| Database | **SQLite** + hand-written SQL | Saves everything in one file. I write the tables, queries and indexes myself. SQLAlchemy only runs them with `text()`. ✅ Decided |
+| Reading resumes | **MarkItDown** | A Microsoft library that pulls the words out of PDF and Word files with one simple call |
 | Phone calls | **ElevenLabs** | Voice AI that makes the calls |
 | Calendar and email | Pretend (mock) versions | Fake versions for safe testing |
 | Tests | pytest | Checks that the code works |
@@ -470,10 +480,10 @@ stateDiagram-v2
 ### Why SQLite?
 
 - **Nothing to install.** The whole database is just one file in the project folder.
-- **It's real SQL.** I write normal SQL tables and queries.
+- **It's real SQL.** I write my own tables, queries and indexes, so I learn SQL too.
 - **LangGraph works with it.** LangGraph can save its place (checkpoints) straight into SQLite.
 - **Good for a student project.** The project PDF suggests it too.
-- **Easy to move later.** I use SQLAlchemy, a tool that talks to the database for me. To switch to PostgreSQL one day, I mostly just change `DATABASE_URL`.
+- **Easy to move later.** SQLAlchemy runs my SQL. To switch to PostgreSQL one day, I change `DATABASE_URL` and fix any SQL that works differently there.
 
 ---
 
@@ -493,8 +503,9 @@ HR_Automation/
 │   ├── integrations/     # AI, ElevenLabs, form, calendar, email (real + pretend)
 │   ├── parsing/          # Reads PDF and Word files
 │   ├── extras/           # ⭐ Blind mode, job post writer, RAG chat, match score email
-│   ├── models/           # Database tables and data shapes
+│   ├── models/           # Data shapes (Pydantic)
 │   └── core/             # Settings, logging, safety
+│       └── database/     # Connection, schema.sql, init_db.py and the .db files
 ├── ui/                   # The Streamlit screens
 ├── config/               # Scoring presets, call questions, email templates
 ├── sample_data/
@@ -503,8 +514,13 @@ HR_Automation/
 ├── tests/                # Tests for AC-01 to AC-12
 ├── docs/                 # Diagram, test results, final report
 ├── .env.example          # Sample secret keys file
-├── requirements.txt      # The list of Python tools
-├── TASKS.md              # Plan, limits and PDF checklist
+├── pyproject.toml        # The list of Python tools (managed by uv)
+├── uv.lock               # The exact version of every tool
+├── information/          # All my project notes
+│   ├── CLAUDE.md         # Project rules and short summary
+│   ├── TASKS.md          # Plan, limits and PDF checklist
+│   ├── problem.md        # Problems I faced and how I solved them
+│   └── tips.md           # My notes and code snippets
 └── README.md             # This file
 ```
 
@@ -513,9 +529,9 @@ HR_Automation/
 ## ▶️ How to run it
 
 ### What you need first
-- Python 3.11 or newer
+- [uv](https://docs.astral.sh/uv/), a fast tool that installs Python and Python packages
 - Git
-- An API key for your AI (Claude, OpenAI or Gemini). An API key is like a password for the AI.
+- A **Groq** API key. An API key is like a password for the AI.
 - *(optional)* An ElevenLabs account, for real phone calls
 
 ### Set it up
@@ -525,19 +541,10 @@ HR_Automation/
 git clone <repository-url>
 cd HR_Automation
 
-# 2. Make a clean space for Python tools (a "virtual environment")
-python -m venv .venv
+# 2. Install Python and all the tools into a clean space called .venv
+uv sync
 
-# 3. Turn it on
-# On Windows:
-.venv\Scripts\activate
-# On Mac or Linux:
-source .venv/bin/activate
-
-# 4. Install the tools
-pip install -r requirements.txt
-
-# 5. Make your secret keys file, then open it and add your keys
+# 3. Make your secret keys file, then open it and add your keys
 cp .env.example .env
 ```
 
@@ -545,10 +552,10 @@ cp .env.example .env
 
 ```bash
 # Start the engine
-uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload
 
 # In a second terminal window, start the screens
-streamlit run ui/app.py
+uv run streamlit run ui/app.py
 ```
 
 Then open:
@@ -563,11 +570,11 @@ The `.env` file holds secret keys. **Never upload it to GitHub.**
 
 | Name | What it is | Example |
 |---|---|---|
-| `LLM_PROVIDER` | Which AI company to use | `anthropic` / `openai` / `google_genai` |
-| `LLM_API_KEY` | The password for the AI | `sk-...` |
+| `LLM_PROVIDER` | Which AI company to use | `groq` |
+| `GROQ_API_KEY` | The password for Groq, my AI service. LangChain finds it by this name | `gsk_...` |
 | `LLM_MODEL` | Which AI model to use | *(model name)* |
-| `DATABASE_URL` | Where the database file is | `sqlite:///./hr_automation.db` |
-| `CHECKPOINT_DB_PATH` | Where LangGraph saves its place | `./checkpoints.db` |
+| `DATABASE_URL` | Where the database file is | `sqlite:///./app/core/database/hr_automation.db` |
+| `CHECKPOINT_DB_PATH` | Where LangGraph saves its place | `./app/core/database/checkpoints.db` |
 | `CHROMA_PATH` | Where the chat's resume search store is saved | `./chroma_db` |
 | `EMBEDDING_MODEL` | The model that turns text into embeddings for the chat | *(model name)* |
 | `USE_MOCK_CALLS` | `true` = pretend call, `false` = real ElevenLabs call | `true` |
@@ -614,8 +621,8 @@ Every pretend part has a **MOCK** label on the screen, so nobody gets confused.
 ## 🧪 Tests
 
 ```bash
-pytest                     # run all tests
-pytest tests/acceptance    # run the tests for AC-01 to AC-12
+uv run pytest                     # run all tests
+uv run pytest tests/acceptance    # run the tests for AC-01 to AC-12
 ```
 
 The results will be written in `docs/test_results.md` *(planned)*.
