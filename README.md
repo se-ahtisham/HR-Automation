@@ -151,7 +151,7 @@ What each level looks for:
 
 Leadership counts **only** if the resume says it clearly, like "Led a team of 5". A job title alone is not enough.
 
-HR can change these numbers for any job.
+These numbers are fixed for each level. HR picks the level when making a job, and that picks the weights. They live in the scoring prompts, not in the database.
 
 #### The CV evaluation prompt template
 
@@ -162,6 +162,7 @@ Agent 1 uses one **prompt template**. A prompt template is a form with blanks. T
 HR marks each skill as:
 - **Must-have** or **Nice-to-have**
 - How important it is (for example Python = 3, SQL = 2, Docker = 1)
+- **Required level from 1 to 5** (for example Python needs 4, SQL needs 2)
 - Minimum years *(optional)*
 
 Then the AI gives each skill a number from 0 to 5:
@@ -183,7 +184,7 @@ Example:
 | SQL | Must-have | 2 | "Used PostgreSQL in my final-year project" |
 | Docker | Nice-to-have | 0 | Not found |
 
-If a must-have skill is missing, the AI **only warns HR**. It never rejects the person.
+The app compares the candidate's level with the required level, like "Python: has 3, needs 4". If a must-have skill is missing or below the required level, the AI **only warns HR**. It never rejects the person.
 
 #### Rules Agent 1 must follow
 - Always show proof from the resume.
@@ -306,8 +307,9 @@ HR can **add, see, edit and turn off** employees.
 | Role | Interviewer / Hiring Manager / HR / Admin |
 | Team | Engineering |
 | Time zone | Asia/Karachi |
-| Work days and hours | Mon–Fri, 10:00–18:00 |
-| Busy times | Leave days, meetings |
+| Can conduct interviews? | Yes or No |
+| Available days and times | Only if Yes. For example Mon 10:00–13:00 and Wed 14:00–17:00 |
+| Busy times | Leave days and meetings. These block a time even if it's normally free |
 | Active? | Yes or No |
 
 People are **turned off** instead of deleted, so old interviews and history stay safe.
@@ -380,10 +382,10 @@ stateDiagram-v2
 |---|---|
 | Resume Received | The resume has arrived. Waiting to read and score it. |
 | Needs Manual Review | Something went wrong. A human needs to check. |
-| Scored — HR Review | The AI scored it. Waiting for HR. |
+| Scored (HR Review) | The AI scored it. Waiting for HR. |
 | Approved for Screening | HR said "yes, call this person". |
 | Screening Pending | The call is waiting to happen. |
-| Screening Completed — HR Review | The call is done. Waiting for HR. |
+| Screening Completed (HR Review) | The call is done. Waiting for HR. |
 | Approved for Interview | HR said "yes, interview this person". |
 | Interview Proposed | Looking for a good time. |
 | Interview Scheduled | The email was sent. All done! ✅ |
@@ -437,12 +439,14 @@ stateDiagram-v2
 
 | Table | What's in it |
 |---|---|
-| Employee | name, email, role, team, time zone, work hours, busy times, active?, scrambled password |
+| Employee | name, email, role, team, time zone, can interview?, active?, scrambled password |
+| EmployeeAvailability | one row for each free time: employee, day of the week, start time, end time |
+| EmployeeBusyTime | one row for each one-off busy time: employee, start, end, reason |
 | SchedulingSettings | interview length, break, work hours and days, time zone, booking days, notice, time choices, max per day, call tries, data keep days, auto score email on/off, who changed it, when |
-| Requisition (the job) | job id, title, job post, level, minimum experience, location, work type (office/remote/hybrid), hiring manager, scoring weights, status, made by, made at |
+| Job | job id, title, job post, level, minimum experience, location, work type (office/remote/hybrid), hiring manager, scoring weights, status, made by, made at |
 | ScreeningQuestion | the call questions for each job, in order |
-| RequisitionSkill | skill name, must-have or nice-to-have, importance, minimum years |
-| RubricPreset | the starting weights for each level (Junior, Mid, Senior, Team Lead) |
+| JobSkill | skill name, must-have or nice-to-have, importance, required level (1 to 5), minimum years |
+| LevelWeights | the starting weights for each level (Junior, Mid, Senior, Team Lead) |
 | Candidate | candidate id, name, contact info, time zone, resume file, where the CV came from (form or HR upload), consent choices, current status |
 | ResumeEvaluation | total score, part scores, skill scores with proof, strengths, weak points, missing skills, warnings, AI model used |
 | Screening | call status, recording consent, answers, summary, which HR person checked it, when |
@@ -462,8 +466,8 @@ stateDiagram-v2
 |---|---|---|
 | Language | Python 3.12 | The coding language |
 | Package manager | **uv** | Installs Python and the tools into `.venv` |
-| Screens | Streamlit | Makes the HR web pages |
-| Backend | FastAPI | The engine that runs everything |
+| Screens | **Streamlit** | Makes the HR web pages. ✅ Decided |
+| Webhooks | **FastAPI** | Receives data from outside my app, like call results and the online CV form. ✅ Decided |
 | Steps and HR stops | **LangGraph** | Controls the flow and waits for HR |
 | Talking to the AI | **LangChain** | Sends prompts and gets neat answers back |
 | AI model | **Groq** (with `langchain-groq`) | The "brain". The model name is set in `.env` |
@@ -473,7 +477,7 @@ stateDiagram-v2
 | Online CV form | *(to be chosen)* | Where candidates send their CV |
 | Database | **SQLite** + hand-written SQL | Saves everything in one file. I write the tables, queries and indexes myself. SQLAlchemy only runs them with `text()`. ✅ Decided |
 | Reading resumes | **MarkItDown** | A Microsoft library that pulls the words out of PDF and Word files with one simple call |
-| Phone calls | **ElevenLabs** | Voice AI that makes the calls |
+| Phone calls | **ElevenLabs** (not final, I decide on Day 5) | Voice AI that makes the calls |
 | Calendar and email | Pretend (mock) versions | Fake versions for safe testing |
 | Tests | pytest | Checks that the code works |
 
@@ -513,7 +517,6 @@ HR_Automation/
 │   └── resumes/          # Fake resumes only!
 ├── tests/                # Tests for AC-01 to AC-12
 ├── docs/                 # Diagram, test results, final report
-├── .env.example          # Sample secret keys file
 ├── pyproject.toml        # The list of Python tools (managed by uv)
 ├── uv.lock               # The exact version of every tool
 ├── information/          # All my project notes
@@ -544,8 +547,8 @@ cd HR_Automation
 # 2. Install Python and all the tools into a clean space called .venv
 uv sync
 
-# 3. Make your secret keys file, then open it and add your keys
-cp .env.example .env
+# 3. Make a new file named .env in the main folder, and add your keys
+#    The settings table below lists every key
 ```
 
 ### Start the app
@@ -601,7 +604,7 @@ Scheduling rules (time zone, interview length, call tries) are **not** in `.env`
 | AI model | Real API | — |
 | Phone calls | **Pretend call** (you type the answers) | **ElevenLabs** voice call |
 | Online CV form | *(to be chosen)* | *(to be chosen)* |
-| Calendar | **Pretend calendar** (built from employee work hours) | Google or Outlook calendar |
+| Calendar | **Pretend calendar** (built from employee available times and busy times) | Google or Outlook calendar |
 | Email | **Pretend email** (saved, not really sent) | Gmail, Outlook or SMTP |
 
 Every pretend part has a **MOCK** label on the screen, so nobody gets confused.
