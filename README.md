@@ -288,7 +288,7 @@ Extra rules:
 **Safety guards:**
 - The email says clearly: *"This is an automatic CV match check, not a hiring decision. A person from our team reviews every application."*
 - It talks only about **job skills**. It never says "rejected".
-- It uses an **email template that Admin approves** (with a version number).
+- *(Changed 6 Nov)* HR sends it by clicking **Send score to candidate** after scoring. The text is in `app/core/score_email.py`.
 - The form asks the candidate to agree to get an automatic feedback email.
 - If the CV can't be read, or the AI's answer is broken, **no score email is sent**. The app sends a simple "we got your CV" email instead, and HR checks it.
 - Each candidate gets the score email **only once** per job.
@@ -317,6 +317,8 @@ HR can **add, see, edit and turn off** employees.
 | Active? | Yes or No |
 
 People are **turned off** instead of deleted, so old interviews and history stay safe.
+
+*(Built 6 Nov: `app/core/employees.py` + the Employees page. Every change is saved in the audit log. A turned-off person is not offered as a hiring manager.)*
 
 ### 🔐 Login and who can see what
 
@@ -352,10 +354,11 @@ HR can change these rules any time:
 
 Every change is saved in the history.
 
-### Email templates
+### Email text
 
-Admin can edit the email templates (CV match score, "we got your CV", invite, reschedule, cancel) and the call script.
-Each change gets a **new version number**, and the app saves which version was used for every email.
+*(Changed 6 Nov: the Templates page was removed.)* The email text is written in the code. The CV Match Score email is in
+`app/core/score_email.py` and its design in `app/core/score_email.html` (Jinja2). Red Mail sends it with Gmail. The invite, moved and cancelled emails come with the scheduling agent (Day 7). Every email is saved in
+`communication_logs` (who, when, which email, and if it was sent).
 
 ---
 
@@ -387,7 +390,7 @@ stateDiagram-v2
 | Resume Received | The resume has arrived. Waiting to read and score it. |
 | Needs Manual Review | Something went wrong. A human needs to check. |
 | Scored (HR Review) | The AI scored it. Waiting for HR. |
-| Approved for Screening | HR said "yes, call this person". |
+| Approved for Calling | HR said "yes, call this person". (Renamed from "Approved for Screening" on 5 Nov.) |
 | Screening Pending | The call is waiting to happen. |
 | Screening Completed (HR Review) | The call is done. Waiting for HR. |
 | Approved for Interview | HR said "yes, interview this person". |
@@ -481,7 +484,7 @@ stateDiagram-v2
 | Online CV form | *(to be chosen)* | Where candidates send their CV |
 | Database | **SQLite** + hand-written SQL | Saves everything in one file. I write the tables, queries and indexes myself. SQLAlchemy only runs them with `text()`. ✅ Decided |
 | Reading resumes | **MarkItDown** | A Microsoft library that pulls the words out of PDF and Word files with one simple call |
-| Phone calls | **ElevenLabs** (not final, I decide on Day 5) | Voice AI that makes the calls |
+| Phone calls | **ElevenLabs** ✅ Decided 5 Nov | Voice AI agent. The same 4 questions for every job: congratulations, available date and time, previous job, why shift. The **script agent** phones the candidate (Twilio number in ElevenLabs) when HR clicks Call, and saves the answers and a summary of the call. Low limits: 3 min per call, 20 calls a day. Notes: `information/elevenlabs.md` |
 | Calendar and email | Pretend (mock) versions | Fake versions for safe testing |
 | Tests | pytest | Checks that the code works |
 
@@ -592,6 +595,8 @@ The `.env` file holds secret keys. **Never upload it to GitHub.**
 | `USE_MOCK_CALLS` | `true` = pretend call, `false` = real ElevenLabs call | `true` |
 | `ELEVENLABS_API_KEY` | The password for ElevenLabs | `...` |
 | `ELEVENLABS_AGENT_ID` | The ID of my voice agent in ElevenLabs | `...` |
+| `SMTP_EMAIL` | The Gmail address that sends the CV Match Score email. Empty = MOCK (not really sent) | `...` |
+| `SMTP_APP_PASSWORD` | A Gmail **app password** (not my normal password) | `...` |
 | `ELEVENLABS_PHONE_NUMBER_ID` | The phone number ElevenLabs calls from | `...` |
 | `ELEVENLABS_WEBHOOK_SECRET` | Checks that call notes really came from ElevenLabs | `...` |
 | `FORM_WEBHOOK_SECRET` | Checks that new CVs really came from my online form | `...` |

@@ -1,4 +1,5 @@
-# Jobs: save a new job with its skills and call questions, and read jobs back for the Jobs page
+# Jobs: save a new job with its skills, and read jobs back for the Jobs page.
+# No call questions here: the script agent asks the same questions for every job (app/agents/script_agent/prompts.py)
 from sqlalchemy import text
 
 from app.core.audit import add_audit_event
@@ -10,7 +11,7 @@ SKILL_TYPES = ["Must-have", "Nice-to-have"]
 
 
 # Checks the New job form. Gives back an error message, or None when it is fine
-def check_new_job(title, description, level, work_type, skills, questions):
+def check_new_job(title, description, level, work_type, skills):
     if not title.strip():
         return "Please write the job title."
     if not description.strip():
@@ -26,15 +27,13 @@ def check_new_job(title, description, level, work_type, skills, questions):
             return f"Pick Must-have or Nice-to-have for {skill['name']}."
         if not 1 <= skill["required_level"] <= 5:
             return f"The required level for {skill['name']} must be 1 to 5."
-    if not questions:
-        return "Add at least one call question."
     return None
 
 
-# Saves the job, its skills and its questions together.
+# Saves the job and its skills together.
 # engine.begin() is one transaction: if any INSERT fails, nothing is saved
 def save_job(title, description, level, min_experience, location, work_type, hiring_manager_id,
-             skills, questions, saved_by):
+             skills, saved_by):
     with engine.begin() as conn:
         result = conn.execute(
             text("""
@@ -73,20 +72,11 @@ def save_job(title, description, level, min_experience, location, work_type, hir
                 },
             )
 
-        for number, question in enumerate(questions, start=1):
-            conn.execute(
-                text("""
-                    INSERT INTO screening_questions (job_id, question, question_order)
-                    VALUES (:job_id, :question, :question_order)
-                """),
-                {"job_id": job_id, "question": question, "question_order": number},
-            )
-
     add_audit_event(saved_by, "job created", "job", job_id, f"title: {title.strip()}")
     return job_id
 
 
-# Reads every job, newest first, with its skills, questions and number of candidates
+# Reads every job, newest first, with its skills and number of candidates
 def list_jobs() -> list[dict]:
     with engine.begin() as conn:
         jobs = conn.execute(text("""
@@ -110,16 +100,7 @@ def list_jobs() -> list[dict]:
                 """),
                 {"job_id": job["id"]},
             ).mappings().all()
-            questions = conn.execute(
-                text("""
-                    SELECT question
-                    FROM screening_questions
-                    WHERE job_id = :job_id
-                    ORDER BY question_order
-                """),
-                {"job_id": job["id"]},
-            ).scalars().all()
-            job_list.append({**job, "skills": [dict(skill) for skill in skills], "questions": list(questions)})
+            job_list.append({**job, "skills": [dict(skill) for skill in skills]})
     return job_list
 
 

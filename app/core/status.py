@@ -4,8 +4,8 @@ from app.core.database.database import get_one, run_sql
 ALLOWED_MOVES = {
     "Resume Received": ["Scored (HR Review)", "Needs Manual Review", "Closed"],
     "Needs Manual Review": ["Resume Received", "Closed"],
-    "Scored (HR Review)": ["Approved for Screening", "Closed"],
-    "Approved for Screening": ["Screening Pending", "Closed"],
+    "Scored (HR Review)": ["Approved for Calling", "Closed"],
+    "Approved for Calling": ["Screening Pending", "Closed"],
     "Screening Pending": ["Screening Completed (HR Review)", "Needs Manual Review", "Closed"],
     "Screening Completed (HR Review)": ["Approved for Interview", "Closed"],
     "Approved for Interview": ["Interview Proposed", "Closed"],

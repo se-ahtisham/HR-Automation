@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS candidates (
     job_id INTEGER REFERENCES jobs (id),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
+    phone TEXT, -- Read from the CV. The call agent calls this number
     resume_path TEXT,
     resume_text TEXT,
     current_status TEXT NOT NULL DEFAULT 'Resume Received',
@@ -164,6 +165,7 @@ CREATE TABLE IF NOT EXISTS screenings (
     summary TEXT,
     next_step TEXT,
     call_tries INTEGER NOT NULL DEFAULT 0,
+    conversation_id TEXT, -- The call's id on ElevenLabs, to get the answers back
     reviewed_by INTEGER REFERENCES employees (id),
     reviewed_at TEXT,
     call_time TEXT
@@ -222,6 +224,8 @@ CREATE TABLE IF NOT EXISTS hr_tasks (
     id INTEGER PRIMARY KEY,
     candidate_id INTEGER REFERENCES candidates (id),
     title TEXT NOT NULL,
+    task_type TEXT NOT NULL DEFAULT 'Other', -- Like "No free slot" or "Human requested"
+    note TEXT, -- HR's own notes about the task
     status TEXT NOT NULL DEFAULT 'Open',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     done_at TEXT

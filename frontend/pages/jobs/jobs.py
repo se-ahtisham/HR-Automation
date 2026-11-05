@@ -1,4 +1,5 @@
-# Jobs: see all jobs, and make a new one. Jobs are saved in the database (jobs, job_skills, screening_questions)
+# Jobs: see all jobs, and make a new one. Jobs are saved in the database (jobs, job_skills).
+# No call questions: the script agent asks the same questions for every job
 from html import escape
 
 import pandas as pd
@@ -10,7 +11,7 @@ from components import chip, empty_state, icon, load_page_css, page_header, pill
 from levels import LEVEL_WEIGHTS
 
 load_page_css(__file__)
-page_header("Jobs", "Make a job with its skills and call questions.", section="Hiring")
+page_header("Jobs", "Make a job with its level and skills.", section="Hiring")
 
 user = st.session_state.user
 
@@ -54,11 +55,8 @@ with all_jobs_tab:
                         <div class="job-bottom"><span><b>{job['candidate_count']}</b> candidates</span><span>{icon('person')} {manager}</span></div>
                     </div>
                 """)
-                with st.expander("Job post and call questions"):
+                with st.expander("Job post"):
                     st.markdown(job["job_description"])
-                    st.markdown("**Call questions**")
-                    for order, question in enumerate(job["questions"], start=1):
-                        st.markdown(f"{order}. {question}")
 
 # ---------- Tab 2: the new job form ----------
 with new_job_tab:
@@ -66,7 +64,7 @@ with new_job_tab:
     with st.container(key="card-writer"):
         st.html("""
             <p class="section-title"><span class="mi mi-box">auto_awesome</span>AI Job Post Writer</p>
-            <p class="writer-help">Type a few words. The AI fills in the form below: job post, level, skills and 5 call questions.
+            <p class="writer-help">Type a few words. The AI fills in the form below: job post, level and skills.
             You must read and edit everything before you save.</p>
         """)
         idea_col, button_col = st.columns([4, 1], vertical_alignment="bottom")
@@ -140,20 +138,7 @@ with new_job_tab:
             },
         )
 
-    with st.container(key="card-questions"):
-        st.html('<p class="section-title">Call questions *</p>'
-                '<p class="writer-help">Job questions only. Never ask about age, religion, family or health.</p>')
-        questions_table = st.data_editor(
-            # dtype="str" keeps it a text column, even when the list is empty
-            pd.DataFrame({"Question": pd.Series(draft.get("questions", []), dtype="str")}),
-            num_rows="dynamic",
-            hide_index=True,
-            width="stretch",
-            key=f"questions_{form}",
-            column_config={"Question": st.column_config.TextColumn(required=True, width="large")},
-        )
-
-    # Turn the 2 tables into plain lists. Empty rows are skipped
+    # Turn the skills table into a plain list. Empty rows are skipped
     skills = []
     for _, row in skills_table.iterrows():
         if isinstance(row["Skill"], str) and row["Skill"].strip():
@@ -163,15 +148,14 @@ with new_job_tab:
                 "required_level": int(row["Required level"]) if pd.notna(row["Required level"]) else 3,
                 "min_years": int(row["Min years"]) if pd.notna(row["Min years"]) else None,
             })
-    questions = [q.strip() for q in questions_table["Question"] if isinstance(q, str) and q.strip()]
 
     if st.button("Save job", type="primary", icon=":material/save:"):
-        problem = check_new_job(title, description, level, work_type, skills, questions)
+        problem = check_new_job(title, description, level, work_type, skills)
         if problem:
             st.error(problem, icon=":material/error:")
         else:
             save_job(title, description, level, min_experience, location, work_type,
-                     manager_names.get(manager), skills, questions, user["email"])
+                     manager_names.get(manager), skills, user["email"])
             st.session_state.job_saved = f"Saved: {title.strip()}"
             # A bigger number = new keys = an empty form for the next job. The AI draft is used up
             st.session_state.job_draft = None

@@ -1,13 +1,18 @@
-/* score_test.css: only for the Score test page */
+/* score_view.css: the look of Agent 1's result. Used by Upload and score CVs, and Candidates */
 
+/* A box shown before there is a result */
 .empty-state {
-    margin-top: 1rem;
     padding: 2.5rem 1rem;
     text-align: center;
     color: var(--muted);
     border: 2px dashed #D9D5FA;
     background: rgba(255, 255, 255, 0.6);
     border-radius: var(--radius);
+}
+.empty-icon {
+    font-size: 2.6rem;
+    color: #B9B1F5;
+    margin-bottom: 0.4rem;
 }
 
 /* Numbered steps: 1, 2, 3 in purple circles */
@@ -17,11 +22,12 @@
     gap: 0.6rem;
     font-size: 1rem;
     font-weight: 600;
-    margin: 0 0 0.6rem 0;
+    margin: 0;
 }
 .step span {
     width: 28px;
     height: 28px;
+    flex-shrink: 0;
     border-radius: 50%;
     background: var(--primary);
     color: white;
@@ -36,7 +42,7 @@
     color: var(--muted);
 }
 .result-step {
-    margin-top: 1.6rem;
+    margin-top: 1rem;
 }
 
 /* A red box for trick lines */
@@ -47,21 +53,23 @@
     border-radius: 16px;
     padding: 1rem 1.2rem;
     color: #7F1D1D;
-    margin-bottom: 0.4rem;
 }
 .trick-alert p {
     margin: 0.3rem 0 0 0;
     font-size: 0.9rem;
 }
 
-/* The total score card: center everything */
+/* The total score card: center everything, same height as the part scores card */
+.st-key-card-total,
+.st-key-card-parts {
+    min-height: 300px;
+}
 .st-key-card-total {
     text-align: center;
-    height: 100%;
 }
 .total-note {
     color: var(--muted);
-    margin: 0.6rem 0 0 0;
+    margin: 0;
 }
 
 /* ---------- Skill table ---------- */
@@ -72,16 +80,17 @@
 }
 .skill-table th {
     text-align: left;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--muted);
-    padding: 0.5rem 0.4rem;
+    padding: 0.5rem 0.5rem;
     border-bottom: 1px solid var(--border);
 }
 .skill-table td {
-    padding: 0.65rem 0.4rem;
+    padding: 0.7rem 0.5rem;
     border-bottom: 1px solid #F0F1F6;
+    vertical-align: middle;
 }
 .skill-table small {
     color: var(--muted);
@@ -89,6 +98,16 @@
 .skill-table .lvl {
     margin-left: 0.4rem;
     font-weight: 600;
+}
+/* Keep the skill name, its type and the found level on one line each */
+.skill-table td:nth-child(1),
+.skill-table td:nth-child(2),
+.skill-table td:nth-child(3),
+.skill-table td:nth-child(4) {
+    white-space: nowrap;
+}
+.skill-table td:nth-child(1) small {
+    display: block;
 }
 .skill-table .proof {
     color: #4B5165;
@@ -100,34 +119,31 @@
     margin: 0.6rem 0 0 0;
 }
 
-/* ---------- Proof lines ---------- */
+/* ---------- Proof lines: text on the left, the badge on the right, on one line ---------- */
 .proof-line {
-    margin: 0.4rem 0;
-    padding: 0.6rem 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0.45rem 0;
+    padding: 0.65rem 1rem;
     border-left: 3px solid var(--primary);
     background: var(--primary-soft);
-    border-radius: 0 10px 10px 0;
+    border-radius: 0 12px 12px 0;
     font-size: 0.9rem;
 }
-.proof-line span {
-    float: right;
+.proof-line .found,
+.proof-line .not-found {
+    flex-shrink: 0;
     font-size: 0.75rem;
-    color: var(--green);
     font-weight: 600;
+    white-space: nowrap;
 }
-
-/* A big soft icon in the empty box */
-.empty-icon {
-    font-size: 2.6rem;
-    color: #B9B1F5;
-    margin-bottom: 0.4rem;
-}
+.proof-line .found { color: var(--green); }
+.proof-line .not-found { color: var(--red); }
 
 /* A proof line the AI made up: red, so HR sees it is not in the CV */
 .proof-missing {
     border-left-color: var(--red);
     background: #FFF5F5;
-}
-.proof-line span.not-found {
-    color: var(--red);
 }

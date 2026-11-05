@@ -1,224 +1,154 @@
-# Candidates: HR review screen #1. HR reads the score and decides.
-# Step 1: pick a candidate from the cards. Step 2: read the details and decide.
+# Candidates: every candidate with their score. HR approves for calling (HR stop #1), then the script agent calls them
+import json
+import os
+from html import escape
+
 import streamlit as st
 
-from components import (avatar, card_title, chip, icon, icon_list, level_dots, load_page_css, page_header, part_bar, pill,
-                        score_gauge, status_badge, empty_state)
-from levels import LEVEL_WEIGHTS
+from app.agents.script_agent.agent import call_candidate, get_call_result
+from app.agents.script_agent.save_call import save_call_result, save_call_started
+from app.core.candidates import approve_for_calling, decline, delete_candidate, list_candidates, saved_score
+from app.core.cv_scoring import job_skills
+from app.core.jobs import list_jobs
+from components import FRONTEND, add_css, avatar, card_title, empty_state, icon_list, load_page_css, page_header, status_badge
+from score_view import send_score_button, show_email_preview, show_score_result
 
 load_page_css(__file__)
-
-# Real data comes from the backend in the next step. Until then every list is empty
-JOBS = []
-CANDIDATES = []
-HISTORY = []
-
-
-def get_job(job_id):
-    return [j for j in JOBS if j["id"] == job_id][0]
-
+add_css(FRONTEND / "score_view.css")
 
 user = st.session_state.user
-can_approve = user["role"] != "Hiring Manager"
+candidates = list_candidates()
 
 if "picked_candidate" not in st.session_state:
     st.session_state.picked_candidate = None
-if "blind" not in st.session_state:
-    st.session_state.blind = True
 
 
-# Blind Mode shows "Candidate #7". Details unlock after HR approves for screening
-def is_hidden(candidate):
-    locked = candidate["status"] in ["Resume Received", "Scored (HR Review)", "Needs Manual Review"]
-    return st.session_state.blind and locked
+# ======================= One candidate's profile =======================
+# The picked candidate may be gone (deleted), so None goes back to the list
+c = next((p for p in candidates if p["id"] == st.session_state.picked_candidate), None)
+if c is None:
+    st.session_state.picked_candidate = None
 
+if c is not None:
 
-def shown_name(candidate):
-    return f"Candidate #{candidate['id']}" if is_hidden(candidate) else candidate["name"]
-
-
-# ======================= Step 2: one candidate's details =======================
-if st.session_state.picked_candidate is not None:
-    c = [p for p in CANDIDATES if p["id"] == st.session_state.picked_candidate][0]
-    job = get_job(c["job_id"])
-
-    if st.button("Back to all candidates", icon=":material/arrow_back:", type="tertiary"):
+    back_col, _, delete_col = st.columns([1.5, 3, 1], vertical_alignment="center")
+    if back_col.button("Back to all candidates", icon=":material/arrow_back:", type="tertiary"):
         st.session_state.picked_candidate = None
         st.rerun()
 
-    # ---------- Top card: who, and the score ----------
+    # Delete for good: the popover asks again, so one wrong click doesn't delete anyone
+    with delete_col.popover("Delete", icon=":material/delete:", width="stretch"):
+        st.write(f"Delete **{c['name']}**, their score, their call and their CV file? This can't be undone.")
+        if st.button("Yes, delete", type="primary", icon=":material/delete_forever:", width="stretch"):
+            delete_candidate(c["id"], user["email"])
+            st.session_state.picked_candidate = None
+            st.rerun()
+
     with st.container(key="card-head"):
-        info_col, gauge_col = st.columns([2.4, 1], vertical_alignment="center")
-        with info_col:
-            if is_hidden(c):
-                contact = f'<p class="contact">{icon("lock")} Name and contact details unlock after you approve for screening.</p>'
-            else:
-                contact = f'<p class="contact">{icon("mail")} {c["email"]} &nbsp;·&nbsp; {icon("call")} {c["phone"]}</p>'
-            st.html(f"""
-                <div class="head">
-                    {avatar(c['name'], 'lg', hidden=is_hidden(c))}
-                    <div>
-                        <h2 class="detail-name">{shown_name(c)}</h2>
-                        <p class="detail-meta">{job['title']} · {job['level']}</p>
-                        {status_badge(c['status'])}
-                        {contact}
-                    </div>
+        st.html(f"""
+            <div class="head">
+                {avatar(c['name'], 'lg')}
+                <div>
+                    <h2 class="detail-name">{escape(c['name'])}</h2>
+                    <p class="detail-meta">{escape(c['job_title'])} · {c['level']} · Score {c['total_score'] or '-'}/100</p>
+                    {status_badge(c['current_status'])}
+                    <p class="contact">{escape(c['email'] or 'No email')} &nbsp;·&nbsp; {escape(c['phone'] or 'No phone')}</p>
                 </div>
-            """)
-        with gauge_col:
-            if c["score"] is not None:
-                st.html(score_gauge(c["score"]))
+            </div>
+        """)
 
-    # A CV that couldn't be read has no score, so a human must check it
-    if c["score"] is None:
-        st.error(f"Needs Manual Review: {c['note']}. Ask the candidate for a new file.", icon=":material/error:")
-        st.stop()
+    status = c["current_status"]
 
-    if c["trick_lines"]:
-        found = ", ".join(f'"{line}"' for line in c["trick_lines"])
-        st.warning(f"Trick lines found in the CV: {found}. They were ignored, and the score did not change.",
-                   icon=":material/warning:")
-
-    detail_col, decide_col = st.columns([2, 1], gap="medium")
-
-    with detail_col:
-        score_tab, skills_tab, notes_tab, history_tab = st.tabs(["Score", "Skills", "Notes", "History"])
-
-        with score_tab:
-            with st.container(key="card-score"):
-                weights = LEVEL_WEIGHTS[job["level"]]
-                st.html('<p class="section-title">Part scores</p>' +
-                        "".join(part_bar(name, score, weights[name]) for name, score in c["parts"].items()))
-                st.html('<p class="section-title" style="margin-top:1.2rem">Proof from the CV</p>' +
-                        "".join(f'<blockquote class="proof-line">{line}</blockquote>' for line in c["proof_lines"]))
-
-        with skills_tab:
-            with st.container(key="card-skills"):
-                needed = {s["skill"]: s for s in job["skills"]}
-                rows = ""
-                for s in c["skill_scores"]:
-                    need = needed.get(s["skill"], {"type": "—", "required_level": 0})
-                    low = s["level"] < need["required_level"]
-                    if not low:
-                        flag = pill("Meets", "green")
-                    elif need["type"] == "Must-have":
-                        flag = pill("Must-have is low", "red")
-                    else:
-                        flag = pill("Below", "amber")
-                    rows += f"""
-                        <div class="skill-row">
-                            <div><b>{s['skill']}</b><small>{need['type']}</small></div>
-                            <div>{level_dots(s['level'], need['required_level'])}</div>
-                            <div>{flag}</div>
-                            <div class="proof">“{s['proof']}”</div>
-                        </div>
-                    """
-                st.html(rows + '<p class="hint">The orange ring shows the needed level. '
-                               'A low must-have is only a warning, never a reject.</p>')
-
-        with notes_tab:
-            with st.container(key="card-notes"):
-                col1, col2, col3 = st.columns(3)
-                col1.html(card_title("thumb_up", "Strengths", "mi-green") + icon_list(c["strengths"], "check"))
-                col2.html(card_title("search", "Weak points", "mi-amber") + icon_list(c["weak_points"], "remove"))
-                missing = "".join(chip(s, "missing") for s in c["missing_skills"]) or "Nothing is missing."
-                col3.html(card_title("block", "Missing skills", "mi-red") + missing)
-                email = pill("Sent (MOCK)", "green") if c["email_sent"] else pill("Not sent", "gray")
-                st.html(f'<p class="email-line">CV Match Score email: {email}</p>')
-
-        with history_tab:
-            with st.container(key="card-history"):
-                items = "".join(
-                    f'<li><span class="time">{h["time"]}</span><b>{h["who"]}</b>: {h["what"]}</li>' for h in HISTORY
-                )
-                st.html(f'<ul class="history">{items}</ul>')
-
-    # ---------- HR decision (HR stop #1), always next to the details ----------
-    with decide_col:
+    # ---------- HR stop #1: approve for calling, or decline ----------
+    if status == "Scored (HR Review)":
         with st.container(key="card-decision"):
-            st.html('<p class="section-title">Your decision</p>'
-                    '<p class="hint" style="margin-top:-0.4rem">The AI only advises. Please write why.</p>')
-            if not can_approve:
-                st.info("A Hiring Manager can see candidates, but can't approve or decline.", icon=":material/lock:")
-            reason = st.text_area("Reason", placeholder="Why did you decide this?", height=110,
-                                  disabled=not can_approve)
-            approve = st.button("Approve for screening", type="primary", icon=":material/check:",
-                                width="stretch", disabled=not can_approve)
-            col1, col2 = st.columns(2)
-            decline = col1.button("Decline", icon=":material/close:", width="stretch", disabled=not can_approve)
-            change = col2.button("Change", icon=":material/edit:", width="stretch", disabled=not can_approve)
-            if approve or decline or change:
+            st.html('<p class="section-title">Your decision</p>')
+            if st.button("Approved for calling", type="primary", icon=":material/check:", width="stretch"):
+                approve_for_calling(c["id"], user["email"])
+                st.rerun()
+            reason = st.text_input("Reason to decline", placeholder="Why not this candidate?")
+            if st.button("Decline", icon=":material/close:", width="stretch"):
                 if reason.strip():
-                    st.toast("MOCK: your decision is not saved yet.", icon=":material/check_circle:")
+                    decline(c["id"], reason.strip(), user["email"])
+                    st.rerun()
                 else:
                     st.error("Please write a reason first.")
-    st.stop()
 
+    # ---------- The script agent phones the candidate ----------
+    if status == "Approved for Calling":
+        with st.container(key="card-decision"):
+            st.html(card_title("call", "Call the candidate") +
+                    '<p class="hint">The script agent asks the 4 questions, then gives HR a summary. Only call test numbers.</p>')
+            if not c["phone"]:
+                st.warning("No phone number was found in this CV.", icon=":material/phone_disabled:")
+            elif not os.environ.get("ELEVENLABS_PHONE_NUMBER_ID"):
+                st.info("Add ELEVENLABS_PHONE_NUMBER_ID to .env first (my Twilio number in ElevenLabs).", icon=":material/info:")
+            elif st.button(f"Call {c['phone']}", type="primary", icon=":material/call:", width="stretch"):
+                conversation_id = call_candidate(c["phone"], c["name"], c["job_title"])
+                save_call_started(c["id"], conversation_id, user["email"])
+                st.rerun()
 
-# ======================= Step 1: all candidates as cards =======================
-page_header("Candidates", "Best score first. Open a card to read the proof and decide.", section="Hiring")
-
-if not JOBS:
-    st.html(empty_state("group", "No candidates yet", "Create a job and upload CVs. Each CV is scored and shows here."))
-    st.stop()
-
-filter_col, grid_col = st.columns([1.15, 3.4], gap="medium")
-
-# ---------- Left: the filter panel ----------
-with filter_col:
-    with st.container(key="card-filter"):
-        st.html('<p class="filter-title">Filter</p><p class="filter-label">Job</p>')
-        job_titles = [job["title"] for job in JOBS]
-        picked_title = st.radio("Job", job_titles, label_visibility="collapsed")
-        job = [j for j in JOBS if j["title"] == picked_title][0]
-        people = [c for c in CANDIDATES if c["job_id"] == job["id"]]
-
-        st.html('<p class="filter-label">Status</p>')
-        statuses = sorted({c["status"] for c in people})
-        shown_statuses = [s for s in statuses if st.checkbox(f"{s} · {len([c for c in people if c['status'] == s])}",
-                                                             value=True, key=f"status_{s}")]
-
-        st.html('<p class="filter-label">Minimum score</p>')
-        min_score = st.slider("Minimum score", 0, 100, 0, step=5, label_visibility="collapsed")
-
-        st.html('<p class="filter-label">Privacy</p>')
-        # The toggle isn't on screen in Step 2, so I keep its value in my own key
-        st.session_state.blind = st.toggle(":material/visibility_off: Blind Mode", value=st.session_state.blind,
-                                           help="Hides name, email, phone and other personal details.")
-
-# Keep the people that pass the filters. A candidate with no score always shows, so a human sees them
-people = [c for c in people if c["status"] in shown_statuses]
-people = [c for c in people if c["score"] is None or c["score"] >= min_score]
-people.sort(key=lambda c: c["score"] if c["score"] is not None else -1, reverse=True)
-
-# ---------- Right: the cards, 3 in a row ----------
-with grid_col:
-    st.html(f'<p class="grid-title">{job["title"]} <span>{len(people)} candidates</span></p>')
-    if not people:
-        st.html('<div class="empty">No candidates match these filters.</div>')
-
-    columns = st.columns(3)
-    for number, c in enumerate(people):
-        with columns[number % 3]:
-            with st.container(key=f"card-person-{c['id']}"):
-                needed = {s["skill"]: s["required_level"] for s in job["skills"]}
-                tags = ""
-                for s in c["skill_scores"]:
-                    kind = "good" if s["level"] >= needed.get(s["skill"], 0) else "missing"
-                    tags += chip(s["skill"], kind)
-                if c["score"] is None:
-                    score = '<span class="score-pill score-none">No score</span>'
-                    tags = chip(c["note"])
+    # ---------- The call is on, or just ended ----------
+    if status == "Screening Pending":
+        with st.container(key="card-decision"):
+            st.html(card_title("phone_in_talk", "The call is on") + '<p class="hint">When the call ends, get the answers and the summary.</p>')
+            if st.button("Get the call result", type="primary", icon=":material/download:", width="stretch"):
+                result = get_call_result(c["conversation_id"])
+                if result is None:
+                    st.info("The call isn't finished yet. Try again in a few seconds.", icon=":material/hourglass_top:")
                 else:
-                    score = f'<span class="score-pill">{c["score"]}<small>/100</small></span>'
-                warning = f'<span class="trick-dot" title="Trick lines found">{icon("warning")}</span>' if c["trick_lines"] else ""
-                st.html(f"""
-                    <div class="person-top">{avatar(c['name'], 'md', hidden=is_hidden(c))}{score}</div>
-                    <p class="person-name">{shown_name(c)} {warning}</p>
-                    <p class="person-job">{job['title']}</p>
-                    <div class="tags">{tags}</div>
-                    {status_badge(c['status'])}
-                """)
-                if st.button("Review", key=f"open_{c['id']}", type="primary", width="stretch"):
-                    st.session_state.picked_candidate = c["id"]
+                    save_call_result(c["id"], c["conversation_id"], result, user["email"])
                     st.rerun()
+
+    # ---------- What the candidate said, saved in the database ----------
+    if c["call_status"] == "Done":
+        answers = json.loads(c["answers"] or "{}")
+        said = [
+            f"<b>Consent:</b> {escape(c['consent_status'] or '-')}",
+            f"<b>Available for interview:</b> {escape(c['candidate_availability'] or 'Not given')}",
+            f"<b>Previous job:</b> {escape(answers.get('previous_job') or 'Not given')}",
+            f"<b>Why they want to shift:</b> {escape(answers.get('reason_for_shift') or 'Not given')}",
+        ]
+        with st.container(key="card-call-result"):
+            st.html(card_title("record_voice_over", "What the candidate said", "mi-green") + icon_list(said, "check") +
+                    card_title("summarize", "Summary of the call") + f"<p>{escape(c['summary'] or '')}</p>")
+
+    if c["total_score"] is None:
+        st.error("This CV could not be read or scored. A human must check it.", icon=":material/error:")
+    else:
+        send_score_button(c["id"], user["email"])
+        show_email_preview(c["id"])
+        job = next(j for j in list_jobs() if j["id"] == c["job_id"])
+        show_score_result(saved_score(c), c["level"], job_skills(job), c["name"])
+    st.stop()
+
+
+# ======================= All candidates =======================
+page_header("Candidates", "Best score first. Approved candidates show first, ready for the script agent to call.", section="Hiring")
+
+if not candidates:
+    st.html(empty_state("group", "No candidates yet", "Upload and score CVs. Each scored CV shows here."))
+    st.stop()
+
+# One simple filter: the status. It starts on the candidates HR approved for calling
+STATUSES = ["Approved for Calling", "Screening Pending", "Screening Completed (HR Review)",
+            "Scored (HR Review)", "Needs Manual Review", "Closed"]
+status = st.selectbox("Status", STATUSES, format_func=lambda s: f"{s} · {sum(c['current_status'] == s for c in candidates)}")
+people = [c for c in candidates if c["current_status"] == status]
+if not people:
+    st.html('<div class="empty">No candidates with this status.</div>')
+
+columns = st.columns(3)
+for number, c in enumerate(people):
+    with columns[number % 3]:
+        with st.container(key=f"card-person-{c['id']}"):
+            score = f'{c["total_score"]}<small>/100</small>' if c["total_score"] is not None else "No score"
+            st.html(f"""
+                <div class="person-top">{avatar(c['name'], 'md')}<span class="score-pill">{score}</span></div>
+                <p class="person-name">{escape(c['name'])}</p>
+                <p class="person-job">{escape(c['job_title'])}</p>
+                {status_badge(c['current_status'])}
+            """)
+            if st.button("Open", key=f"open_{c['id']}", type="primary", width="stretch"):
+                st.session_state.picked_candidate = c["id"]
+                st.rerun()

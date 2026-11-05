@@ -22,3 +22,14 @@
     color: var(--muted);
     font-size: 0.85rem;
 }
+
+/* A done task is crossed out and gray */
+.task-done {
+    text-decoration: line-through;
+    color: var(--muted);
+}
+.task-note {
+    margin: 0.35rem 0 0 0;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+}

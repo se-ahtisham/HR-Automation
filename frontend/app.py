@@ -25,14 +25,13 @@ login = st.Page("pages/login/login.py", title="Log in", icon=":material/login:")
 dashboard = st.Page("pages/dashboard/dashboard.py", title="Dashboard", icon=":material/space_dashboard:", default=True)
 jobs = st.Page("pages/jobs/jobs.py", title="Jobs", icon=":material/work:")
 candidates = st.Page("pages/candidates/candidates.py", title="Candidates", icon=":material/group:")
-screening = st.Page("pages/screening/screening.py", title="Screening calls", icon=":material/call:")
+call_results = st.Page("pages/call_results/call_results.py", title="Call results", icon=":material/call:")
 interviews = st.Page("pages/interviews/interviews.py", title="Interviews", icon=":material/event:")
-score_test = st.Page("pages/score_test/score_test.py", title="Score test", icon=":material/science:")
+score_cvs = st.Page("pages/score_cvs/score_cvs.py", title="Upload & score CVs", icon=":material/upload_file:")
 chat = st.Page("pages/chat/chat.py", title="Ask your candidates", icon=":material/forum:")
 todo = st.Page("pages/todo/todo.py", title="HR to-do list", icon=":material/checklist:")
 employees = st.Page("pages/employees/employees.py", title="Employees", icon=":material/badge:")
 settings = st.Page("pages/settings/settings.py", title="Settings", icon=":material/settings:")
-templates = st.Page("pages/templates/templates.py", title="Templates", icon=":material/mail:")
 
 user = st.session_state.user
 
@@ -44,9 +43,9 @@ if user is None:
 # Only HR logs in, so there is one menu with every page
 menu = {
     "Overview": [dashboard],
-    "Hiring": [jobs, candidates, screening, interviews],
-    "Tools": [score_test, chat, todo],
-    "Manage": [employees, settings, templates],
+    "Hiring": [jobs, score_cvs, candidates, call_results, interviews],
+    "Tools": [chat, todo],
+    "Manage": [employees, settings],
 }
 
 # position="hidden" hides Streamlit's own menu, so I can draw my own below
@@ -76,13 +75,6 @@ with st.sidebar:
                 active = "-active" if menu_page.title == page.title else ""
                 with st.container(key=f"nav-{slug}{active}"):
                     st.page_link(menu_page)
-
-    st.html("""
-        <div class="side-tip">
-            <span class="mi">verified_user</span>
-            <div><b>AI advises, you decide</b>Every step needs a person.</div>
-        </div>
-    """)
 
     with st.container(key="logout"):
         if st.button("Log out", icon=":material/logout:", width="stretch"):

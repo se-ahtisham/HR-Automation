@@ -28,7 +28,6 @@ class JobDraft(BaseModel):
     min_experience: int = Field(ge=0, le=30)
     job_post: str
     skills: list[DraftSkill]
-    questions: list[str]
 
 
 # The job writer has its own Groq key, so it doesn't use up Agent 1's free limit

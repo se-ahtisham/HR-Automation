@@ -393,12 +393,12 @@ header[data-testid="stHeader"] {
 
 /* The space between sidebar blocks */
 [data-testid="stSidebarUserContent"] [data-testid="stVerticalBlock"] {
-    gap: 0.75rem;
+    gap: 0.6rem;
 }
 
-/* The menu: no gap between links. The group names make the space */
+/* The menu: a clear gap between links, so each one stands alone */
 .st-key-side-nav {
-    gap: 0 !important;
+    gap: 0.35rem !important;
 }
 .nav-group {
     font-size: 0.66rem;
@@ -406,19 +406,19 @@ header[data-testid="stHeader"] {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: rgba(255, 255, 255, 0.6);
-    margin: 0.8rem 0 0.3rem 0.85rem;
+    margin: 1.1rem 0 0.2rem 0.85rem;
 }
 .nav-group.first {
-    margin-top: 0.2rem;
+    margin-top: 0.3rem;
 }
 /* Each menu link has the same height and a small space under it */
 [class*="st-key-nav-"] {
-    margin-bottom: 1px;
+    margin-bottom: 0;
 }
 [class*="st-key-nav-"] a {
     border-radius: 12px;
-    padding: 0.45rem 0.85rem;
-    min-height: 37px;
+    padding: 0.55rem 0.85rem;
+    min-height: 40px;
     transition: background 0.15s ease;
 }
 [class*="st-key-nav-"] a:hover {

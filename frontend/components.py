@@ -10,7 +10,7 @@ FRONTEND = Path(__file__).parent
 STATUS_COLORS = {
     "Resume Received": "gray",
     "Scored (HR Review)": "amber",
-    "Approved for Screening": "blue",
+    "Approved for Calling": "blue",
     "Screening Pending": "blue",
     "Screening Completed (HR Review)": "amber",
     "Approved for Interview": "green",

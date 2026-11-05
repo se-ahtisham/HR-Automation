@@ -13,11 +13,13 @@ from app.agents.resume_scoring.safety import CVResult
 
 load_dotenv()
 
-# max_tokens gives the AI enough room to finish its answer
+# max_tokens gives the AI enough room to finish its answer.
+# reasoning_effort="low" = the AI thinks less before it answers: about 10x faster, and fewer tokens for Groq's free limit
 llm = init_chat_model(
     model=os.environ["LLM_MODEL"],
     model_provider=os.environ["LLM_PROVIDER"],
     max_tokens=4000,
+    reasoning_effort="low",
 )
 
 

@@ -42,7 +42,7 @@ with st.container(key="hero"):
                 st.page_link("pages/candidates/candidates.py", label="Review candidates", icon=":material/arrow_forward:")
             else:
                 st.page_link("pages/jobs/jobs.py", label="Create a job", icon=":material/add:")
-            st.page_link("pages/score_test/score_test.py", label="Score a CV", icon=":material/science:")
+            st.page_link("pages/score_cvs/score_cvs.py", label="Score a CV", icon=":material/upload_file:")
     with art_col:
         st.html(svg_image("""
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150">
@@ -116,7 +116,7 @@ with right:
         if CANDIDATES:
             steps = [
                 ("Scored", ["Scored (HR Review)"]),
-                ("Screening", ["Approved for Screening", "Screening Pending", "Screening Completed (HR Review)"]),
+                ("Screening", ["Approved for Calling", "Screening Pending", "Screening Completed (HR Review)"]),
                 ("Interview", ["Approved for Interview", "Interview Proposed", "Interview Scheduled"]),
                 ("Manual review", ["Needs Manual Review"]),
             ]
