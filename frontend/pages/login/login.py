@@ -1,8 +1,8 @@
 # Login page: a form on the left, a picture on the right.
-# It checks the email and password with my FastAPI backend (bcrypt, hr_accounts table).
+# It checks the email and password by calling my Python code directly (bcrypt, hr_accounts table).
 import streamlit as st
 
-import api_client
+from app.core.accounts import account_details, check_new_account, create_account, log_in
 from components import FRONTEND, load_page_css, svg_image
 
 load_page_css(__file__)
@@ -27,10 +27,6 @@ with st.container(key="login-shell"):
     # ---------- Left: the form ----------
     with form_col:
         with st.container(key="login-form"):
-            if not api_client.is_running():
-                st.warning(f"The backend is not running. Start it first: `{api_client.START_COMMAND}`",
-                           icon=":material/cloud_off:")
-
             # ===== Sign in =====
             if st.session_state.auth_mode == "login":
                 st.html("""
@@ -41,15 +37,17 @@ with st.container(key="login-shell"):
                     email = st.text_input("Email", placeholder="Email", label_visibility="collapsed")
                     password = st.text_input("Password", type="password", placeholder="Password",
                                              label_visibility="collapsed")
-                    st.html('<p class="forgot">Forgot your password? Ask your Admin.</p>')
+                    st.html('<p class="forgot">Forgot your password? Ask your HR team.</p>')
                     submitted = st.form_submit_button("Sign In", type="primary", width="stretch")
 
                 if submitted:
-                    try:
-                        st.session_state.user = api_client.login(email, password)
+                    account = log_in(email, password)
+                    if account is None:
+                        # The same message for a wrong email and a wrong password, so nobody can guess which emails exist
+                        st.error("Email or password is wrong.", icon=":material/error:")
+                    else:
+                        st.session_state.user = account_details(account)
                         st.rerun()
-                    except api_client.ApiError as error:
-                        st.error(str(error), icon=":material/error:")
 
                 st.html('<div class="divider"><span>New to Nexora Hire?</span></div>')
                 if st.button("Create an account", icon=":material/person_add:", width="stretch"):
@@ -71,16 +69,17 @@ with st.container(key="login-shell"):
                     submitted = st.form_submit_button("Create account", type="primary", width="stretch")
 
                 if submitted:
+                    problem = check_new_account(name, email, password)
                     if password != again:
                         st.error("The two passwords are not the same.", icon=":material/error:")
+                    elif problem:
+                        st.error(problem, icon=":material/error:")
                     else:
-                        try:
-                            # Log the new person in right away
-                            st.session_state.user = api_client.signup(name, email, password)
-                            st.session_state.auth_mode = "login"
-                            st.rerun()
-                        except api_client.ApiError as error:
-                            st.error(str(error), icon=":material/error:")
+                        # Save the account, then log the new person in right away
+                        account = create_account(name, email, password)
+                        st.session_state.user = account_details(account)
+                        st.session_state.auth_mode = "login"
+                        st.rerun()
 
                 st.html('<div class="divider"><span>Already have an account?</span></div>')
                 if st.button("Back to sign in", icon=":material/login:", width="stretch"):

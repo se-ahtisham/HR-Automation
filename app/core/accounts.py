@@ -29,7 +29,26 @@ def find_by_email(email):
     )
 
 
-# Makes a new HR account. The caller checks the password rules first
+# Checks the Create account form. Gives back an error message, or None when it is fine
+def check_new_account(name, email, password):
+    if not name.strip():
+        return "Please write your name."
+    if "@" not in email or "." not in email:
+        return "Please write a real email address."
+    # bcrypt only uses the first 72 bytes, so I don't allow longer passwords
+    if len(password) < 8 or len(password.encode("utf-8")) > 72:
+        return "The password must be 8 to 72 characters."
+    if find_by_email(email) is not None:
+        return "An account with this email already exists."
+    return None
+
+
+# What the web page keeps after a login. Never the password hash
+def account_details(account):
+    return {"id": account.id, "name": account.name, "email": account.email, "role": "HR"}
+
+
+# Makes a new HR account. Call check_new_account first
 def create_account(name, email, password):
     run_sql(
         """

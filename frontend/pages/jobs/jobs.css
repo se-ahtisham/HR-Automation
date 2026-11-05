@@ -97,3 +97,14 @@
 .job-meta .mi {
     color: var(--primary);
 }
+
+/* The small "Coming on Day 9" label */
+.soon {
+    margin-left: 0.6rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: white;
+    color: var(--primary);
+}

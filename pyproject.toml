@@ -13,7 +13,6 @@ dependencies = [
     "pydantic>=2.14.2",
     "python-dotenv>=1.2.4",
     "python-multipart>=0.0.33",
-    "requests>=2.34.2",
     "sqlalchemy>=2.1.6",
     "streamlit>=1.66.1",
     "uvicorn>=0.54.0",

@@ -1,21 +1,17 @@
 # Score test: upload a job post and a CV, then see Agent 1's full result.
-# The Score button sends the files to my FastAPI backend, which runs Agent 1.
+# The Score button reads the files and runs Agent 1 by calling my Python code directly.
 from html import escape
 
 import pandas as pd
 import streamlit as st
 
-import api_client
+from app.agents.resume_scoring.score_with_checks import score_with_checks
+from app.agents.resume_scoring.reader import FileProblem, upload_to_text
 from components import card_title, chip, icon, icon_list, level_dots, load_page_css, page_header, part_bar, pill, score_gauge
 from levels import LEVEL_WEIGHTS
 
 load_page_css(__file__)
 page_header("Score test", "Try Agent 1 on one job post and one CV, in 3 steps.", section="Tools")
-
-# Show a clear warning at the top if the backend is off
-if not api_client.is_running():
-    st.warning(f"The backend is not running, so scoring won't work. "
-               f"Start it in a second terminal: `{api_client.START_COMMAND}`", icon=":material/cloud_off:")
 
 # ---------- Step 1 and 2: the inputs ----------
 left, right = st.columns(2, gap="medium")
@@ -69,11 +65,24 @@ if st.button("Score this CV", type="primary", icon=":material/auto_awesome:", wi
     else:
         with st.spinner("Agent 1 is reading the CV. This takes about 10 to 30 seconds..."):
             try:
-                result = api_client.score_cv(level, skills, cv_file, job_text, job_file)
-                # Keep the result, so it stays when the page reruns
-                st.session_state.score_result = result
-                st.session_state.score_info = {"cv": cv_file.name, "level": level, "skills": skills}
-            except api_client.ApiError as error:
+                # The job post: the uploaded file wins, else the pasted text
+                if job_file is not None:
+                    job_post = upload_to_text(job_file.name, job_file.getvalue(), [".md", ".txt", ".pdf", ".docx"])
+                else:
+                    job_post = job_text
+                resume_text = upload_to_text(cv_file.name, cv_file.getvalue(), [".pdf", ".docx"])
+                if not resume_text.strip():
+                    raise FileProblem("Needs Manual Review: the CV has no text. It may be a scanned picture.")
+
+                result = score_with_checks(level, skills, job_post, resume_text)
+                if result is None:
+                    st.session_state.score_result = None
+                    st.error("The AI failed 3 times. Needs Manual Review. Try again in a minute.", icon=":material/error:")
+                else:
+                    # Keep the result, so it stays when the page reruns
+                    st.session_state.score_result = result
+                    st.session_state.score_info = {"cv": cv_file.name, "level": level, "skills": skills}
+            except FileProblem as error:
                 st.session_state.score_result = None
                 st.error(str(error), icon=":material/error:")
 

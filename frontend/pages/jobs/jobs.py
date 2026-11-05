@@ -1,72 +1,119 @@
-# Jobs: see all jobs, and make a new one
+# Jobs: see all jobs, and make a new one. Jobs are saved in the database (jobs, job_skills, screening_questions)
+from html import escape
+
 import pandas as pd
 import streamlit as st
 
+from app.agents.job_writer.agent import write_job_post
+from app.core.jobs import LEVELS, SKILL_TYPES, WORK_TYPES, check_new_job, list_employee_names, list_jobs, save_job
 from components import chip, empty_state, icon, load_page_css, page_header, pill
 from levels import LEVEL_WEIGHTS
 
 load_page_css(__file__)
-page_header("Jobs", "Make a job, add its skills and upload CVs.", section="Hiring")
+page_header("Jobs", "Make a job with its skills and call questions.", section="Hiring")
 
-# Real data comes from the backend in the next step. Until then every list is empty
-JOBS = []
-EMPLOYEES = []
+user = st.session_state.user
 
-all_jobs_tab, new_job_tab = st.tabs(["All jobs", "New job"])
+# A number in every form key. Making it bigger after a save gives a fresh, empty form
+if "job_form" not in st.session_state:
+    st.session_state.job_form = 0
+form = st.session_state.job_form
 
-# ---------- Tab 1: all jobs as cards ----------
+# A message to show once, after the page reruns
+if st.session_state.get("job_saved"):
+    st.toast(st.session_state.job_saved, icon=":material/check_circle:")
+    st.session_state.job_saved = None
+
+jobs = list_jobs()
+
+all_jobs_tab, new_job_tab = st.tabs([f"All jobs ({len(jobs)})", "New job"])
+
+# ---------- Tab 1: all jobs as cards, from the database ----------
 with all_jobs_tab:
-    if not JOBS:
+    if not jobs:
         st.html(empty_state("work", "No jobs yet", "Open the New job tab to create your first job."))
     columns = st.columns(2)
-    for number, job in enumerate(JOBS):
+    for number, job in enumerate(jobs):
         with columns[number % 2]:
             with st.container(key=f"card-job-{job['id']}"):
-                skill_tags = "".join(chip(s["skill"], "good" if s["type"] == "Must-have" else "") for s in job["skills"])
-                job_icon = "code" if job["level"] != "Team Lead" else "groups"
+                skill_tags = "".join(chip(escape(s["name"]), "good" if s["skill_type"] == "Must-have" else "")
+                                     for s in job["skills"])
+                job_icon = "groups" if job["level"] == "Team Lead" else "code"
+                status = pill("Open", "green") if job["status"] == "Open" else pill(job["status"], "gray")
+                location = escape(job["location"]) if job["location"] else "No location"
+                manager = escape(job["manager_name"]) if job["manager_name"] else "No hiring manager"
                 st.html(f"""
                     <div class="job-card">
                         <div class="job-top">
                             <div class="job-icon">{icon(job_icon)}</div>
-                            {pill("Open", "green") if job["open"] else pill("Closed", "gray")}
+                            {status}
                         </div>
-                        <h3>{job['title']}</h3>
-                        <p class="job-meta">{icon('location_on')} {job['location']} &nbsp;{icon('apartment')} {job['work_type']} &nbsp;{icon('signal_cellular_alt')} {job['level']}</p>
+                        <h3>{escape(job['title'])}</h3>
+                        <p class="job-meta">{icon('location_on')} {location} &nbsp;{icon('apartment')} {job['work_type']} &nbsp;{icon('signal_cellular_alt')} {job['level']}</p>
                         <div class="job-skills">{skill_tags}</div>
-                        <div class="job-bottom"><span><b>{job['candidates']}</b> candidates</span><span>{icon('person')} {job['manager']}</span></div>
+                        <div class="job-bottom"><span><b>{job['candidate_count']}</b> candidates</span><span>{icon('person')} {manager}</span></div>
                     </div>
                 """)
-                st.page_link("pages/candidates/candidates.py", label="See candidates", icon=":material/arrow_forward:")
+                with st.expander("Job post and call questions"):
+                    st.markdown(job["job_description"])
+                    st.markdown("**Call questions**")
+                    for order, question in enumerate(job["questions"], start=1):
+                        st.markdown(f"{order}. {question}")
 
 # ---------- Tab 2: the new job form ----------
 with new_job_tab:
-    # AI Job Post Writer (Day 9 extra)
+    # AI Job Post Writer: a short idea -> the whole form filled in. HR must read and edit it before saving
     with st.container(key="card-writer"):
         st.html("""
             <p class="section-title"><span class="mi mi-box">auto_awesome</span>AI Job Post Writer</p>
-            <p class="writer-help">Type a few words. The AI writes the job post, skills, level and 5 call questions.
+            <p class="writer-help">Type a few words. The AI fills in the form below: job post, level, skills and 5 call questions.
             You must read and edit everything before you save.</p>
         """)
         idea_col, button_col = st.columns([4, 1], vertical_alignment="bottom")
-        idea_col.text_input("Your idea", placeholder="need junior Python dev, Lahore, hybrid",
-                            label_visibility="collapsed")
+        idea = idea_col.text_input("Your idea", placeholder="need junior Python dev, Lahore, hybrid",
+                                   label_visibility="collapsed", key=f"idea_{form}")
         if button_col.button("Write it for me", icon=":material/auto_awesome:", width="stretch"):
-            st.toast("MOCK: the AI writer is not connected yet.", icon=":material/auto_awesome:")
+            if not idea.strip():
+                st.error("Type a few words about the job first.", icon=":material/error:")
+            else:
+                with st.spinner("The AI is writing the job..."):
+                    new_draft = write_job_post(idea)
+                if new_draft is None:
+                    st.error("The AI failed 3 times. Please try again in a minute, or fill in the form yourself.",
+                             icon=":material/error:")
+                else:
+                    # Keep the draft, and use new form keys, so every box starts with the AI's text
+                    st.session_state.job_draft = new_draft.model_dump()
+                    st.session_state.job_form += 1
+                    st.rerun()
+
+    # The AI's draft, or empty boxes when there is no draft
+    draft = st.session_state.get("job_draft") or {}
+    if draft:
+        st.info("The AI filled in this form. Please read and change anything before you save.", icon=":material/edit_note:")
 
     with st.container(key="card-details"):
         st.html('<p class="section-title">Job details</p>')
         col1, col2 = st.columns(2)
-        col1.text_input("Job title", placeholder="Junior Python Developer")
-        level = col2.selectbox("Level", ["Junior", "Mid", "Senior", "Team Lead"])
+        title = col1.text_input("Job title *", value=draft.get("title", ""), placeholder="Junior Python Developer",
+                                key=f"title_{form}")
+        level = col2.selectbox("Level *", LEVELS, index=LEVELS.index(draft["level"]) if draft else 0, key=f"level_{form}")
 
         col1, col2, col3 = st.columns(3)
-        col1.number_input("Minimum years of work", min_value=0, max_value=30, value=0)
-        col2.text_input("Location", placeholder="Lahore")
-        col3.selectbox("Work type", ["Office", "Remote", "Hybrid"])
+        min_experience = col1.number_input("Minimum years of work", min_value=0, max_value=30,
+                                           value=draft.get("min_experience", 0), key=f"years_{form}")
+        location = col2.text_input("Location", value=draft.get("location", ""), placeholder="Lahore", key=f"location_{form}")
+        work_type = col3.selectbox("Work type *", WORK_TYPES, index=WORK_TYPES.index(draft["work_type"]) if draft else 0,
+                                   key=f"work_{form}")
 
-        managers = [e["name"] for e in EMPLOYEES if e["role"] == "Hiring Manager"]
-        st.selectbox("Hiring manager", managers, placeholder="Add a hiring manager on the Employees page first")
-        st.text_area("Job post", height=160, placeholder="What the person will do, and what they need...")
+        # Hiring manager is optional. People come from the Employees page
+        managers = list_employee_names()
+        manager_names = {m["name"]: m["id"] for m in managers}
+        manager = st.selectbox("Hiring manager (optional)", list(manager_names), index=None,
+                               placeholder="Add employees on the Employees page to pick one", key=f"manager_{form}")
+
+        description = st.text_area("Job post *", value=draft.get("job_post", ""), height=220, key=f"description_{form}",
+                                   placeholder="What the person will do, and what they need...")
 
         # The weights are fixed per level, so I only show them
         weights = LEVEL_WEIGHTS[level]
@@ -75,37 +122,58 @@ with new_job_tab:
                 f'<div class="weights">{weight_html}</div>')
 
     with st.container(key="card-skills"):
-        st.html('<p class="section-title">Skills</p>')
-        st.data_editor(
-            pd.DataFrame(columns=["Skill", "Type", "Required level", "Min years"]),
+        st.html('<p class="section-title">Skills *</p>'
+                '<p class="writer-help">Add a row for each skill. Click the + under the table to add one.</p>')
+        draft_skills = [{"Skill": s["name"], "Type": s["type"], "Required level": s["required_level"], "Min years": None}
+                        for s in draft.get("skills", [])]
+        skills_table = st.data_editor(
+            pd.DataFrame(draft_skills, columns=["Skill", "Type", "Required level", "Min years"]),
             num_rows="dynamic",
             hide_index=True,
             width="stretch",
-            key="new_job_skills",
+            key=f"skills_{form}",
             column_config={
-                "Type": st.column_config.SelectboxColumn(options=["Must-have", "Nice-to-have"], required=True),
-                "Required level": st.column_config.NumberColumn(min_value=1, max_value=5, step=1),
+                "Skill": st.column_config.TextColumn(required=True),
+                "Type": st.column_config.SelectboxColumn(options=SKILL_TYPES, default="Must-have"),
+                "Required level": st.column_config.NumberColumn(min_value=1, max_value=5, step=1, default=3),
                 "Min years": st.column_config.NumberColumn(min_value=0, max_value=30, step=1),
             },
         )
 
     with st.container(key="card-questions"):
-        st.html('<p class="section-title">Call questions</p>'
+        st.html('<p class="section-title">Call questions *</p>'
                 '<p class="writer-help">Job questions only. Never ask about age, religion, family or health.</p>')
-        st.data_editor(
-            pd.DataFrame(columns=["Question"]),
+        questions_table = st.data_editor(
+            # dtype="str" keeps it a text column, even when the list is empty
+            pd.DataFrame({"Question": pd.Series(draft.get("questions", []), dtype="str")}),
             num_rows="dynamic",
             hide_index=True,
             width="stretch",
-            key="new_job_questions",
+            key=f"questions_{form}",
+            column_config={"Question": st.column_config.TextColumn(required=True, width="large")},
         )
 
-    with st.container(key="card-upload"):
-        st.html('<p class="section-title">Upload CVs</p>')
-        files = st.file_uploader("PDF or Word files, up to 5 MB each", type=["pdf", "docx"],
-                                 accept_multiple_files=True)
-        if files:
-            st.caption(f"{len(files)} file(s) ready. They are scored in the background after you save.")
+    # Turn the 2 tables into plain lists. Empty rows are skipped
+    skills = []
+    for _, row in skills_table.iterrows():
+        if isinstance(row["Skill"], str) and row["Skill"].strip():
+            skills.append({
+                "name": row["Skill"].strip(),
+                "type": row["Type"] if isinstance(row["Type"], str) else "",
+                "required_level": int(row["Required level"]) if pd.notna(row["Required level"]) else 3,
+                "min_years": int(row["Min years"]) if pd.notna(row["Min years"]) else None,
+            })
+    questions = [q.strip() for q in questions_table["Question"] if isinstance(q, str) and q.strip()]
 
     if st.button("Save job", type="primary", icon=":material/save:"):
-        st.toast("MOCK: the job is not saved yet. FastAPI comes next.", icon=":material/save:")
+        problem = check_new_job(title, description, level, work_type, skills, questions)
+        if problem:
+            st.error(problem, icon=":material/error:")
+        else:
+            save_job(title, description, level, min_experience, location, work_type,
+                     manager_names.get(manager), skills, questions, user["email"])
+            st.session_state.job_saved = f"Saved: {title.strip()}"
+            # A bigger number = new keys = an empty form for the next job. The AI draft is used up
+            st.session_state.job_draft = None
+            st.session_state.job_form += 1
+            st.rerun()

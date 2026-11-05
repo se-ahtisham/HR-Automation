@@ -1,21 +1,18 @@
-# The start file of my backend (FastAPI). Run it from the project root:
+# The FastAPI app. The web pages DON'T use it: they call my Python code directly.
+# It is only for webhooks: web addresses that OUTSIDE services send data to, which Streamlit can't receive.
+#   Day 5:  ElevenLabs sends the call transcript when a call ends
+#   Day 11: the online CV form sends each new CV
+# Run it only when I build those:
 #   uv run uvicorn app.api.main:app --reload
-# Then open http://localhost:8000/docs to try every web address in the browser.
 from fastapi import FastAPI
 
-from app.api import auth, resume_scoring
-
 app = FastAPI(
-    title="Nexora Hire API",
-    description="The backend my Streamlit pages talk to. It runs my AI agents.",
+    title="Nexora Hire webhooks",
+    description="Receives data from outside services: ElevenLabs call results (Day 5) and the online CV form (Day 11).",
 )
 
-# Each part has its own file of web addresses (a router). I add them here
-app.include_router(auth.router)
-app.include_router(resume_scoring.router)
 
-
-# A quick check that the backend is running
+# A quick check that the server is running
 @app.get("/health")
 def health():
     return {"status": "ok"}

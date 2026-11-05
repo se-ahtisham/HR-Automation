@@ -471,7 +471,7 @@ stateDiagram-v2
 | Language | Python 3.12 | The coding language |
 | Package manager | **uv** | Installs Python and the tools into `.venv` |
 | Screens | **Streamlit** | Makes the HR web pages, in `frontend/`. Each page has its own `.css` file. ✅ Decided |
-| Backend API | **FastAPI** | Connects the Streamlit pages to my agents and database, and receives data from outside my app, like call results and the online CV form. ✅ Decided |
+| Webhooks | **FastAPI** | Only receives data from outside my app: ElevenLabs call results (Day 5) and the online CV form (Day 11). The pages call Python directly. ✅ Decided |
 | Steps and HR stops | **LangGraph** | Controls the flow and waits for HR |
 | Talking to the AI | **LangChain** | Sends prompts and gets neat answers back |
 | AI model | **Groq** (with `langchain-groq`) | The "brain". The model name is set in `.env` |
@@ -502,14 +502,14 @@ stateDiagram-v2
 ```
 HR_Automation/
 ├── app/
-│   ├── api/              # The backend (FastAPI): main.py, files.py, resume_scoring.py
-│   ├── agents/           # The 3 AI helpers
-│   │   ├── resume_scoring/
+│   ├── api/              # FastAPI, only for the Day 5 and Day 11 webhooks (main.py for now)
+│   ├── agents/           # The 3 AI helpers, plus the AI Job Post Writer
+│   │   ├── resume_scoring/   # Agent 1, and reader.py (reads PDF and Word files)
+│   │   ├── job_writer/       # ⭐ Short idea -> full job draft (own Groq key)
 │   │   ├── screening_call/
 │   │   └── scheduling/
 │   ├── workflow/         # LangGraph steps and HR stop points
 │   ├── integrations/     # AI, ElevenLabs, form, calendar, email (real + pretend)
-│   ├── parsing/          # Reads PDF and Word files
 │   ├── extras/           # ⭐ Blind mode, job post writer, RAG chat, match score email
 │   ├── models/           # Data shapes (Pydantic)
 │   └── core/             # Settings, logging, safety
@@ -522,7 +522,7 @@ HR_Automation/
 ├── config/               # Scoring presets, call questions, email templates
 ├── sample_data/
 │   ├── job_descriptions/ # Fake job posts
-│   └── resumes/          # Fake resumes only!
+│   └── resumes/          # Empty: CVs come from the web now (5 Nov)
 ├── tests/                # Tests for AC-01 to AC-12
 ├── docs/                 # Diagram, test results, final report
 ├── pyproject.toml        # The list of Python tools (managed by uv)
@@ -564,16 +564,14 @@ uv sync
 ### Start the app
 
 ```bash
-# Terminal 1: start the backend (FastAPI). It runs the AI agents
-uv run uvicorn app.api.main:app --reload
-
-# Terminal 2: start the web pages (Streamlit)
+# Start the app. The pages call the Python code directly, so this is the only command
 uv run streamlit run frontend/app.py
+
+# Later, only for the webhooks (Day 5 ElevenLabs results, Day 11 online CV form):
+# uv run uvicorn app.api.main:app --reload
 ```
 
-Then open:
-- The HR screens: http://localhost:8501
-- The engine's help page: http://localhost:8000/docs
+Then open the HR screens: http://localhost:8501
 
 ---
 
@@ -585,6 +583,7 @@ The `.env` file holds secret keys. **Never upload it to GitHub.**
 |---|---|---|
 | `LLM_PROVIDER` | Which AI company to use | `groq` |
 | `GROQ_API_KEY` | The password for Groq, my AI service. LangChain finds it by this name | `gsk_...` |
+| `GROQ_JOB_WRITER_API_KEY` | A second Groq key, only for the AI Job Post Writer, so it doesn't use up Agent 1's free limit | `gsk_...` |
 | `LLM_MODEL` | Which AI model to use | *(model name)* |
 | `DATABASE_URL` | Where the database file is | `sqlite:///./app/core/database/hr_automation.db` |
 | `CHECKPOINT_DB_PATH` | Where LangGraph saves its place | `./app/core/database/checkpoints.db` |

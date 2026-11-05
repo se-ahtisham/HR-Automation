@@ -1,6 +1,15 @@
 # The start file of my web app. Run it from the project root:
 #   uv run streamlit run frontend/app.py
+import sys
+from pathlib import Path
+
 import streamlit as st
+
+# The pages call my Python code in app/ directly, so the project folder must be on Python's import path.
+# It goes first, so "import app.core..." finds the app/ folder and not this app.py file
+PROJECT_ROOT = str(Path(__file__).parent.parent)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from components import FRONTEND, add_css, avatar
 
