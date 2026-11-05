@@ -1,0 +1,61 @@
+/* templates.css: only for the Templates page */
+
+/* Make the radio list look like a menu */
+[data-testid="stRadio"] label {
+    padding: 0.55rem 0.8rem;
+    border-radius: 10px;
+    margin-bottom: 0.2rem;
+    width: 100%;
+}
+[data-testid="stRadio"] label:hover {
+    background: var(--primary-soft);
+}
+
+.editor-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+}
+.editor-top h3 {
+    margin: 0;
+    padding: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.st-key-card-editor textarea {
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.blanks {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+.blanks code {
+    background: var(--primary-soft);
+    color: var(--primary);
+    padding: 0.05rem 0.35rem;
+    border-radius: 5px;
+}
+
+.versions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.versions li {
+    padding: 0.55rem 0;
+    border-bottom: 1px solid #F0F1F6;
+    font-size: 0.9rem;
+}
+.versions li:last-child {
+    border-bottom: none;
+}
+.versions span {
+    float: right;
+    color: var(--muted);
+    font-size: 0.8rem;
+}

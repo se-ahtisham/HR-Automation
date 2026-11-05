@@ -1,0 +1,133 @@
+/* score_test.css: only for the Score test page */
+
+.empty-state {
+    margin-top: 1rem;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--muted);
+    border: 2px dashed #D9D5FA;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: var(--radius);
+}
+
+/* Numbered steps: 1, 2, 3 in purple circles */
+.step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.6rem 0;
+}
+.step span {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: grid;
+    place-items: center;
+    font-size: 0.85rem;
+    box-shadow: 0 6px 14px rgba(108, 92, 231, 0.35);
+}
+.step small {
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--muted);
+}
+.result-step {
+    margin-top: 1.6rem;
+}
+
+/* A red box for trick lines */
+.trick-alert {
+    background: #FFF5F5;
+    border: 1px solid #FBCACA;
+    border-left: 5px solid var(--red);
+    border-radius: 16px;
+    padding: 1rem 1.2rem;
+    color: #7F1D1D;
+    margin-bottom: 0.4rem;
+}
+.trick-alert p {
+    margin: 0.3rem 0 0 0;
+    font-size: 0.9rem;
+}
+
+/* The total score card: center everything */
+.st-key-card-total {
+    text-align: center;
+    height: 100%;
+}
+.total-note {
+    color: var(--muted);
+    margin: 0.6rem 0 0 0;
+}
+
+/* ---------- Skill table ---------- */
+.skill-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.skill-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    padding: 0.5rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+}
+.skill-table td {
+    padding: 0.65rem 0.4rem;
+    border-bottom: 1px solid #F0F1F6;
+}
+.skill-table small {
+    color: var(--muted);
+}
+.skill-table .lvl {
+    margin-left: 0.4rem;
+    font-weight: 600;
+}
+.skill-table .proof {
+    color: #4B5165;
+    font-style: italic;
+}
+.hint {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 0.6rem 0 0 0;
+}
+
+/* ---------- Proof lines ---------- */
+.proof-line {
+    margin: 0.4rem 0;
+    padding: 0.6rem 0.9rem;
+    border-left: 3px solid var(--primary);
+    background: var(--primary-soft);
+    border-radius: 0 10px 10px 0;
+    font-size: 0.9rem;
+}
+.proof-line span {
+    float: right;
+    font-size: 0.75rem;
+    color: var(--green);
+    font-weight: 600;
+}
+
+/* A big soft icon in the empty box */
+.empty-icon {
+    font-size: 2.6rem;
+    color: #B9B1F5;
+    margin-bottom: 0.4rem;
+}
+
+/* A proof line the AI made up: red, so HR sees it is not in the CV */
+.proof-missing {
+    border-left-color: var(--red);
+    background: #FFF5F5;
+}
+.proof-line span.not-found {
+    color: var(--red);
+}

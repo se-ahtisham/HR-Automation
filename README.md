@@ -155,9 +155,13 @@ These numbers are fixed for each level. HR picks the level when making a job, an
 
 #### The CV evaluation prompt template
 
-Agent 1 uses one **prompt template**. A prompt template is a form with blanks. The blanks are filled with the job level, what matters at that level, the skills, the job post and the resume. This way, every CV for a job is checked the same way.
+Agent 1 has **one prompt for each level**, in `app/agents/resume_scoring/prompts.py`. Each prompt gives the AI an expert role (like "an engineering manager who hires team leads"), the weight table for that level, and the same scoring rules. The AI scores 6 parts from 0 to 5, works out the total out of 100, and lists strengths, weak points, missing skills and proof lines. To change the criteria, I edit the tables in that file.
+
+Python then checks the answer: Pydantic makes sure every number is in range, a trick-phrase check warns HR, and each proof line is checked against the real CV. HR always reviews the score.
 
 #### Every skill gets its own score
+
+> *(Planned, not in the current version. Right now Agent 1 scores the 6 parts and lists missing skills.)*
 
 HR marks each skill as:
 - **Must-have** or **Nice-to-have**
@@ -466,8 +470,8 @@ stateDiagram-v2
 |---|---|---|
 | Language | Python 3.12 | The coding language |
 | Package manager | **uv** | Installs Python and the tools into `.venv` |
-| Screens | **Streamlit** | Makes the HR web pages. ✅ Decided |
-| Webhooks | **FastAPI** | Receives data from outside my app, like call results and the online CV form. ✅ Decided |
+| Screens | **Streamlit** | Makes the HR web pages, in `frontend/`. Each page has its own `.css` file. ✅ Decided |
+| Backend API | **FastAPI** | Connects the Streamlit pages to my agents and database, and receives data from outside my app, like call results and the online CV form. ✅ Decided |
 | Steps and HR stops | **LangGraph** | Controls the flow and waits for HR |
 | Talking to the AI | **LangChain** | Sends prompts and gets neat answers back |
 | AI model | **Groq** (with `langchain-groq`) | The "brain". The model name is set in `.env` |
@@ -498,7 +502,7 @@ stateDiagram-v2
 ```
 HR_Automation/
 ├── app/
-│   ├── api/              # The web addresses the screens talk to (FastAPI)
+│   ├── api/              # The backend (FastAPI): main.py, files.py, resume_scoring.py
 │   ├── agents/           # The 3 AI helpers
 │   │   ├── resume_scoring/
 │   │   ├── screening_call/
@@ -510,7 +514,11 @@ HR_Automation/
 │   ├── models/           # Data shapes (Pydantic)
 │   └── core/             # Settings, logging, safety
 │       └── database/     # Connection, schema.sql, init_db.py and the .db files
-├── ui/                   # The Streamlit screens
+├── frontend/             # The Streamlit web app (see information/streamlit.md)
+│   ├── app.py            # Start file: login check and menu
+│   ├── base.css          # Styles shared by every page
+│   └── pages/            # One folder per page: page.py + page.css
+├── .streamlit/           # config.toml: the theme (colors, font)
 ├── config/               # Scoring presets, call questions, email templates
 ├── sample_data/
 │   ├── job_descriptions/ # Fake job posts
@@ -523,7 +531,9 @@ HR_Automation/
 │   ├── CLAUDE.md         # Project rules and short summary
 │   ├── TASKS.md          # Plan, limits and PDF checklist
 │   ├── problem.md        # Problems I faced and how I solved them
-│   └── tips.md           # My notes and code snippets
+│   ├── tips.md           # My notes and code snippets
+│   ├── streamlit.md      # Everything I learned about Streamlit and CSS
+│   └── fastapi.md        # My backend: every file, request and error, with full code
 └── README.md             # This file
 ```
 
@@ -554,11 +564,11 @@ uv sync
 ### Start the app
 
 ```bash
-# Start the engine
-uv run uvicorn app.main:app --reload
+# Terminal 1: start the backend (FastAPI). It runs the AI agents
+uv run uvicorn app.api.main:app --reload
 
-# In a second terminal window, start the screens
-uv run streamlit run ui/app.py
+# Terminal 2: start the web pages (Streamlit)
+uv run streamlit run frontend/app.py
 ```
 
 Then open:
@@ -591,7 +601,6 @@ The `.env` file holds secret keys. **Never upload it to GitHub.**
 | `MAX_UPLOAD_MB` | Biggest resume file allowed | `5` |
 | `LANGSMITH_API_KEY` | *(optional)* Lets you watch the AI's steps while fixing bugs | `...` |
 | `LOG_LEVEL` | How much detail to write in logs | `INFO` |
-| `DEMO_PASSWORD` | Password for the demo users made by the setup script | *(you choose)* |
 
 Scheduling rules (time zone, interview length, call tries) are **not** in `.env`. HR changes them on the **Settings page**.
 
@@ -649,13 +658,7 @@ The results will be written in `docs/test_results.md` *(planned)*.
 9. Approve someone for an interview. Pick a time and confirm the email.
 10. Open the dashboard and look at the full history.
 
-**Demo logins** *(planned)*: a setup script makes 3 fake users. They all use the password you put in `DEMO_PASSWORD`.
-
-| User | Role |
-|---|---|
-| admin@demo.test | Admin |
-| hr@demo.test | HR Recruiter |
-| manager@demo.test | Hiring Manager |
+**First login:** the app starts empty. Click **Create an account** on the login page to make the first HR account (saved in the `hr_accounts` table, password scrambled with bcrypt). Only HR logs in.
 
 ---
 

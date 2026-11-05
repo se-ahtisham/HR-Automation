@@ -1,0 +1,24 @@
+/* todo.css: only for the HR to-do list page */
+
+.block-container {
+    max-width: 1000px;
+}
+
+[class*="st-key-card-task-"] {
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.15rem;
+    transition: border-color 0.15s ease;
+}
+[class*="st-key-card-task-"]:hover {
+    border-color: #C7CBF5;
+}
+
+.task-text {
+    font-weight: 600;
+    margin: 0;
+}
+.task-meta {
+    margin: 0.3rem 0 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}

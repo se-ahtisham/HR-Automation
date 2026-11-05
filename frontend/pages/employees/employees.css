@@ -1,0 +1,33 @@
+/* employees.css: only for the Employees page */
+
+.people {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.people th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    padding: 0.5rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+}
+.people td {
+    padding: 0.65rem 0.4rem;
+    border-bottom: 1px solid #F0F1F6;
+}
+.people tr:hover td {
+    background: #FAFAFD;
+}
+/* A turned-off person is faded */
+.people tr.off td {
+    opacity: 0.5;
+}
+
+.who {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}

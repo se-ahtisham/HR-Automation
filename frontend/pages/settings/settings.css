@@ -1,0 +1,12 @@
+/* settings.css: only for the Settings page */
+
+/* A little space between the cards in a column */
+[class*="st-key-card-"] {
+    margin-bottom: 0.3rem;
+}
+
+/* The privacy card has a soft green background */
+.st-key-card-privacy {
+    background: linear-gradient(180deg, #F7FEF9, #FFFFFF);
+    border-color: #CDEFD8;
+}

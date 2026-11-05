@@ -1,0 +1,27 @@
+/* chat.css: only for the Ask your candidates page */
+
+/* Keep the chat narrow, so lines are easy to read */
+.block-container {
+    max-width: 900px;
+}
+
+/* Each message looks like a card */
+[data-testid="stChatMessage"] {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.8rem 1rem;
+    box-shadow: var(--shadow);
+}
+
+/* The quick question buttons look like soft pills */
+.stButton button {
+    border-radius: 999px;
+    background: var(--primary-soft);
+    border: 1px solid #DCDFFB;
+    color: var(--primary);
+}
+.stButton button:hover {
+    background: #E0E4FF;
+    border-color: var(--primary);
+}
