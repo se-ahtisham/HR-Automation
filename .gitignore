@@ -4,3 +4,7 @@
 chroma_db/
 __pycache__/
 sample_data/resumes/Muhammad_Ahtisham_CV.pdf
+
+# My notes stay on my computer only. Every .md file is ignored, except README.md (the GitHub front page)
+*.md
+!README.md
