@@ -1,0 +1,27 @@
+# Streamlit settings. Streamlit reads this file when I run the app from the project root.
+# After a change here, stop and start the app again.
+
+[theme]
+base = "light"
+primaryColor = "#6C5CE7"
+backgroundColor = "#EEF0FB"
+secondaryBackgroundColor = "#F5F6FC"
+textColor = "#232946"
+borderColor = "#E4E6F3"
+showWidgetBorder = true
+baseRadius = "12px"
+font = "Poppins:https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+headingFont = "Poppins:https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+
+# The sidebar is purple, so its text is white
+[theme.sidebar]
+backgroundColor = "#7B66F0"
+secondaryBackgroundColor = "#8C7AF3"
+textColor = "#FFFFFF"
+borderColor = "#9A8AF5"
+
+[client]
+toolbarMode = "minimal"
+
+[server]
+maxUploadSize = 5

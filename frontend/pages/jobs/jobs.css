@@ -1,0 +1,110 @@
+/* jobs.css: only for the Jobs page */
+
+/* Lift the job card a little when the mouse is on it */
+[class*="st-key-card-job-"] {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    margin-bottom: 0.4rem;
+}
+[class*="st-key-card-job-"]:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+}
+
+.job-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.job-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #EFEDFF, #DDD6FE);
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+}
+.job-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0.8rem 0 0 0;
+    padding: 0;
+}
+.job-meta {
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin: 0.2rem 0 0.8rem 0;
+}
+.job-skills {
+    min-height: 2rem;
+}
+.job-bottom {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.6rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #F2F2F9;
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+.job-bottom b {
+    color: var(--text);
+}
+
+/* The AI writer card has a soft purple background */
+.st-key-card-writer {
+    background: linear-gradient(135deg, #F3F0FF, #E9E4FF);
+}
+.writer-help {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin: -0.3rem 0 0.4rem 0;
+}
+
+/* The fixed weights, shown as small boxes */
+.weights-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0.4rem 0;
+}
+.weights {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem;
+}
+.weight {
+    background: #F7F7FD;
+    border-radius: 12px;
+    padding: 0.55rem;
+    text-align: center;
+}
+.weight span {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+.weight b {
+    font-size: 1.05rem;
+    color: var(--primary);
+}
+
+/* The job icon is a bigger purple line icon */
+.job-icon .mi {
+    font-size: 1.7rem;
+    color: var(--primary);
+    vertical-align: 0;
+}
+.job-meta .mi {
+    color: var(--primary);
+}
+
+/* The small "Coming on Day 9" label */
+.soon {
+    margin-left: 0.6rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: white;
+    color: var(--primary);
+}

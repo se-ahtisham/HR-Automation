@@ -1,0 +1,85 @@
+{# The CV Match Score email design (a Jinja2 template). This comment is never sent.
+   Double curly brackets = a value from Python. "for" and "if" blocks = a loop and a choice, right in the HTML.
+   Emails need simple tables and inline styles, because many email apps ignore style blocks. #}
+{% set color = "#22A06B" if score >= 70 else "#E8A33D" if score >= 50 else "#6A4FE0" %}
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F2FF;padding:24px 0;font-family:Arial,Helvetica,sans-serif;">
+  <tr>
+    <td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:#6A4FE0;padding:28px 32px;color:#FFFFFF;">
+            <p style="margin:0;font-size:13px;letter-spacing:2px;text-transform:uppercase;opacity:0.85;">Nexora Hire</p>
+            <h1 style="margin:8px 0 0 0;font-size:24px;">Your CV Match Score</h1>
+            <p style="margin:6px 0 0 0;font-size:15px;opacity:0.9;">{{ job_title }}</p>
+          </td>
+        </tr>
+
+        <!-- Hello + the score -->
+        <tr>
+          <td style="padding:28px 32px 8px 32px;color:#2B2B40;font-size:15px;line-height:1.6;">
+            <p style="margin:0 0 12px 0;">Hello {{ name }},</p>
+            <p style="margin:0;">Thank you for applying for the <b>{{ job_title }}</b> job. We checked your CV against this job. Here is how well it matches.</p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:20px 32px;">
+            <table cellpadding="0" cellspacing="0" style="border:3px solid {{ color }};border-radius:60px;width:120px;height:120px;">
+              <tr>
+                <td align="center" style="font-size:36px;font-weight:bold;color:{{ color }};">{{ score }}<span style="font-size:15px;color:#8A8AA0;">/100</span></td>
+              </tr>
+            </table>
+            <p style="margin:10px 0 0 0;color:#8A8AA0;font-size:13px;">CV Match Score</p>
+          </td>
+        </tr>
+
+        <!-- Strengths -->
+        <tr>
+          <td style="padding:8px 32px;">
+            <div style="border-left:4px solid #22A06B;background:#EEFBF4;border-radius:10px;padding:14px 18px;">
+              <p style="margin:0 0 6px 0;font-weight:bold;color:#22A06B;">Your strengths</p>
+              <ul style="margin:0;padding-left:18px;color:#2B2B40;font-size:14px;line-height:1.6;">
+                {% for line in strengths %}<li>{{ line }}</li>{% else %}<li>None found</li>{% endfor %}
+              </ul>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Things to improve -->
+        <tr>
+          <td style="padding:8px 32px;">
+            <div style="border-left:4px solid #E8A33D;background:#FFF8EC;border-radius:10px;padding:14px 18px;">
+              <p style="margin:0 0 6px 0;font-weight:bold;color:#B7791F;">Things to improve</p>
+              <ul style="margin:0;padding-left:18px;color:#2B2B40;font-size:14px;line-height:1.6;">
+                {% for line in weak_points %}<li>{{ line }}</li>{% else %}<li>None found</li>{% endfor %}
+              </ul>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Missing skills -->
+        <tr>
+          <td style="padding:8px 32px;">
+            <div style="border-left:4px solid #6A4FE0;background:#F4F2FF;border-radius:10px;padding:14px 18px;">
+              <p style="margin:0 0 6px 0;font-weight:bold;color:#6A4FE0;">Skills we could not find in your CV</p>
+              <ul style="margin:0;padding-left:18px;color:#2B2B40;font-size:14px;line-height:1.6;">
+                {% for skill in missing_skills %}<li>{{ skill }}</li>{% else %}<li>None</li>{% endfor %}
+              </ul>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Not a hiring decision -->
+        <tr>
+          <td style="padding:20px 32px 28px 32px;color:#5A5A70;font-size:13px;line-height:1.6;">
+            <p style="margin:0 0 10px 0;">This score only shows how well your CV matches this job. <b>It is not a hiring decision.</b>
+               Our HR team reads every CV and will contact you about the next step.</p>
+            <p style="margin:0;">Best regards,<br>Nexora Hire HR team</p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
