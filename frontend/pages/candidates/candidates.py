@@ -1,12 +1,11 @@
 # Candidates: every candidate with their score. HR approves for calling (HR stop #1), then the script agent calls them
 import json
-import os
 from html import escape
 
 import streamlit as st
 
-from app.agents.script_agent.agent import call_candidate, get_call_result
-from app.agents.script_agent.save_call import save_call_result, save_call_started
+from app.agents.script_agent.agent import call_candidate, calls_are_real, get_call_result, is_test_number
+from app.agents.script_agent.save_call import save_call_result, save_call_started, save_no_answer, save_pretend_call
 from app.core.audit import list_history
 from app.core.candidates import (approve_for_calling, approve_for_interview, decline, delete_candidate, fix_candidate,
                                  list_candidates, saved_score)
@@ -106,28 +105,53 @@ if c is not None:
                 else:
                     st.error("Please write a reason first.")
 
-    # ---------- The script agent phones the candidate ----------
+    # ---------- The script agent phones the candidate (or HR types a pretend call) ----------
     if status == "Approved for Calling":
         with st.container(key="card-decision"):
             st.html(card_title("call", "Call the candidate") +
-                    '<p class="hint">The script agent asks the 4 questions, then gives HR a summary. Only call test numbers.</p>')
-            if not c["phone"]:
-                st.warning("No phone number was found in this CV.", icon=":material/phone_disabled:")
-            elif not os.environ.get("ELEVENLABS_PHONE_NUMBER_ID"):
-                st.info("Add ELEVENLABS_PHONE_NUMBER_ID to .env first (my Twilio number in ElevenLabs).", icon=":material/info:")
+                    '<p class="hint">The script agent asks the 4 questions, then gives HR a summary.</p>')
+            if not calls_are_real():
+                # No Twilio number in .env yet: HR types what the candidate said (MOCK)
+                st.info("MOCK: no phone number in .env yet, so this is a pretend call. Type what the candidate said.",
+                        icon=":material/science:")
+                consent = st.checkbox("The candidate agreed to the call", value=True, key="mock_consent")
+                when = st.text_input("Available date and time", placeholder="Tuesday afternoon", key="mock_when")
+                previous = st.text_input("Previous job", key="mock_previous")
+                why = st.text_input("Why they want to shift", key="mock_why")
+                wants_human = st.checkbox("Asked for a human", key="mock_human")
+                other_way = st.checkbox("Needs another language, or can't do a phone call", key="mock_other")
+                if st.button("Save pretend call", type="primary", icon=":material/save:", width="stretch"):
+                    save_pretend_call(c["id"], {"consent_given": consent, "available_date_time": when, "previous_job": previous,
+                                                "reason_for_shift": why, "wants_human": wants_human,
+                                                "needs_other_way": other_way}, user["email"])
+                    st.rerun()
+            elif not c["phone"]:
+                st.warning("No phone number was found in this CV. Add it with Fix details.", icon=":material/phone_disabled:")
+            elif not is_test_number(c["phone"]):
+                st.warning(f"{c['phone']} is not in TEST_PHONE_NUMBERS in .env. Real calls only go to my test numbers.",
+                           icon=":material/block:")
             elif st.button(f"Call {c['phone']}", type="primary", icon=":material/call:", width="stretch"):
-                conversation_id = call_candidate(c["phone"], c["name"], c["job_title"])
-                save_call_started(c["id"], conversation_id, user["email"])
+                save_call_started(c["id"], call_candidate(c["phone"], c["name"], c["job_title"]), user["email"])
                 st.rerun()
 
-    # ---------- The call is on, or just ended ----------
+    # ---------- The call is on, or just ended (real calls only) ----------
     if status == "Screening Pending":
         with st.container(key="card-decision"):
-            st.html(card_title("phone_in_talk", "The call is on") + '<p class="hint">When the call ends, get the answers and the summary.</p>')
-            if st.button("Get the call result", type="primary", icon=":material/download:", width="stretch"):
+            st.html(card_title("phone_in_talk", "The call is on") +
+                    '<p class="hint">When the call ends, the webhook saves the answers by itself. Or get them here.</p>')
+            if c["call_status"] == "No answer":
+                st.warning("Nobody answered the last call.", icon=":material/phone_missed:")
+                if st.button("Call again", icon=":material/call:", width="stretch"):
+                    save_call_started(c["id"], call_candidate(c["phone"], c["name"], c["job_title"]), user["email"])
+                    st.rerun()
+            elif st.button("Get the call result", type="primary", icon=":material/download:", width="stretch"):
                 result = get_call_result(c["conversation_id"])
                 if result is None:
                     st.info("The call isn't finished yet. Try again in a few seconds.", icon=":material/hourglass_top:")
+                elif result.get("no_answer"):
+                    tries, limit = save_no_answer(c["id"], c["conversation_id"], user["email"])
+                    st.toast(f"No answer (try {tries} of {limit}).", icon=":material/phone_missed:")
+                    st.rerun()
                 else:
                     save_call_result(c["id"], c["conversation_id"], result, user["email"])
                     st.rerun()

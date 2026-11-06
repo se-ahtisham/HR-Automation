@@ -599,6 +599,9 @@ The `.env` file holds secret keys. **Never upload it to GitHub.**
 | `USE_MOCK_CALLS` | `true` = pretend call, `false` = real ElevenLabs call | `true` |
 | `ELEVENLABS_API_KEY` | The password for ElevenLabs | `...` |
 | `ELEVENLABS_AGENT_ID` | The ID of my voice agent in ElevenLabs | `...` |
+| `ELEVENLABS_PHONE_NUMBER_ID` | My Twilio number, imported in ElevenLabs. Empty = pretend calls (MOCK), typed by HR | `...` |
+| `TEST_PHONE_NUMBERS` | The only numbers a real call may go to (my test phones), comma between them | `+923001234567` |
+| `ELEVENLABS_WEBHOOK_SECRET` | Checks that a "call ended" message really came from ElevenLabs | `...` |
 | `SMTP_EMAIL` | The Gmail address that sends the CV Match Score email. Empty = MOCK (not really sent). Works since 6 Nov | `...` |
 | `SMTP_APP_PASSWORD` | A Gmail **app password** (not my normal password) | `...` |
 | `ELEVENLABS_PHONE_NUMBER_ID` | The phone number ElevenLabs calls from | `...` |

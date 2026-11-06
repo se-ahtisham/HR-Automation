@@ -23,7 +23,11 @@ conversation_config = ConversationalConfig.model_validate({
             "llm": "gemini-2.5-flash",
             "max_tokens": 150,
             # Lets the agent hang up when the questions are done
-            "built_in_tools": {"end_call": {"name": "end_call", "params": {"system_tool_type": "end_call"}}},
+            # end_call: hang up when the questions are done. voicemail_detection: hang up on an answering machine
+            "built_in_tools": {
+                "end_call": {"name": "end_call", "params": {"system_tool_type": "end_call"}},
+                "voicemail_detection": {"name": "voicemail_detection", "params": {"system_tool_type": "voicemail_detection"}},
+            },
         },
     },
     # The cheapest English voice
