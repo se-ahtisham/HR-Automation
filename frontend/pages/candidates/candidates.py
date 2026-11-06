@@ -7,7 +7,8 @@ import streamlit as st
 
 from app.agents.script_agent.agent import call_candidate, get_call_result
 from app.agents.script_agent.save_call import save_call_result, save_call_started
-from app.core.candidates import approve_for_calling, decline, delete_candidate, list_candidates, saved_score
+from app.core.audit import list_history
+from app.core.candidates import approve_for_calling, decline, delete_candidate, fix_candidate, list_candidates, saved_score
 from app.core.cv_scoring import job_skills
 from app.core.jobs import list_jobs
 from components import FRONTEND, add_css, avatar, card_title, empty_state, icon_list, load_page_css, page_header, status_badge
@@ -31,10 +32,22 @@ if c is None:
 
 if c is not None:
 
-    back_col, _, delete_col = st.columns([1.5, 3, 1], vertical_alignment="center")
+    back_col, _, fix_col, delete_col = st.columns([1.5, 2, 1, 1], vertical_alignment="center")
     if back_col.button("Back to all candidates", icon=":material/arrow_back:", type="tertiary"):
         st.session_state.picked_candidate = None
         st.rerun()
+
+    # Fix: the CV reader can get a name, email or phone wrong, so HR can correct them
+    with fix_col.popover("Fix details", icon=":material/edit:", width="stretch"):
+        new_name = st.text_input("Name", value=c["name"], key=f"fix_name_{c['id']}")
+        new_email = st.text_input("Email", value=c["email"] or "", key=f"fix_email_{c['id']}")
+        new_phone = st.text_input("Phone (with country code)", value=c["phone"] or "", key=f"fix_phone_{c['id']}")
+        if st.button("Save", type="primary", key=f"fix_save_{c['id']}", width="stretch"):
+            problem = fix_candidate(c["id"], new_name, new_email, new_phone, user["email"])
+            if problem:
+                st.error(problem, icon=":material/error:")
+            else:
+                st.rerun()
 
     # Delete for good: the popover asks again, so one wrong click doesn't delete anyone
     with delete_col.popover("Delete", icon=":material/delete:", width="stretch"):
@@ -56,6 +69,13 @@ if c is not None:
                 </div>
             </div>
         """)
+
+    # History: every step for this candidate, who did it and when (from the audit log)
+    with st.expander("History", icon=":material/history:"):
+        for event in list_history("candidate", c["id"]):
+            details = f" · {escape(event['details'])}" if event["details"] else ""
+            st.html(f'<p class="history-line"><span>{event["timestamp"][:16]}</span> <b>{escape(event["actor"])}</b> '
+                    f'{escape(event["action"])}{details}</p>')
 
     status = c["current_status"]
 

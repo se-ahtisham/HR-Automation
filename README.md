@@ -70,19 +70,19 @@ But HR always has the final say. There are **3 stop points** where the app waits
 - 📝 Call summaries keep "what the candidate said" apart from "what the AI thinks"
 - 📅 Finds interview times and gets the time zones right
 - ✉️ Writes the invite email, but sends it only after HR says yes
-- 📊 A dashboard showing every candidate, their status and full history
-- 🔁 Never calls or emails the same person twice by mistake
+- 📊 A dashboard showing every candidate, their status and full history *(built 6 Nov: real numbers, newest candidates, to-dos, recent activity; each candidate's profile has a History box)*
+- 🔁 Never calls or emails the same person twice by mistake *(tested 6 Nov with a restart test: emails, uploads and approvals are never repeated; the call part is tested when the calling agent is built)*
 - 🔐 Login with roles (Admin, HR, Hiring Manager). Each person sees only what they're allowed to
 - 🔄 HR can move (reschedule) or cancel an interview, and the candidate gets an update email
 - 📌 An HR to-do list for problems the app can't solve alone (like "no free time found")
-- 🗑️ HR can fix or delete a candidate's data, and old data is removed after a set time
+- 🗑️ HR can fix or delete a candidate's data, and old data is removed after a set time *(built 6 Nov: **Fix details** and **Delete** on the profile; candidates older than 90 days are deleted automatically)*
 - ⏳ Scores many resumes in the background, so the screen doesn't freeze
 
 ### ⭐ Extra features (not in the project PDF, added to stand out)
 
 - 🙈 **Blind Review Mode:** a switch that hides the name, photo, email, age hints and university, so HR sees "Candidate #7". This helps HR judge only skills, fairly.
 - ✍️ **AI Job Post Writer:** HR types a few lines, and the AI writes the full job post and suggests the skills, weights, level and call questions. HR always checks and edits before saving.
-- 💬 **"Ask Your Candidates" Chat:** HR asks things like *"Who has AWS and has led a team?"* and gets answers with proof lines from the resumes. It uses **RAG**: first search the resumes, then let the AI answer using only what it found.
+- ~~💬 **"Ask Your Candidates" Chat**~~ ❌ *Dropped on 6 Nov (no time). How it would work: `information/rag.md`.* Old plan: HR asks things like *"Who has AWS and has led a team?"* and gets answers with proof lines from the resumes. It uses **RAG**: first search the resumes, then let the AI answer using only what it found.
 - 📬 **CV Match Score Email:** when a candidate sends their CV through the online form, the AI scores it and emails them their **match score out of 100**, their **strengths**, their **weak points** and their **missing skills**. HR sees the same details.
 
 ---
@@ -263,7 +263,9 @@ Extra rules:
 - The AI suggests: the full job post, the level, must-have and nice-to-have skills with weights, and 5 job-only call questions.
 - HR **must check and edit** before saving. The AI only suggests.
 
-### 💬 "Ask Your Candidates" Chat (RAG)
+### 💬 "Ask Your Candidates" Chat (RAG) ❌ dropped on 6 Nov
+
+*Not built, because of time. My RAG notes are in `information/rag.md`. The old plan stays below.*
 - Resumes are cut into small pieces and saved in **Chroma** (a small search database on your computer) as embeddings. Embeddings are numbers that capture the meaning of the text.
 - When HR asks a question, the app finds the best matching pieces and the AI answers **only from them**, with the proof line and candidate number for each claim.
 - If the answer isn't in the resumes, it says "I couldn't find that". It never makes things up.
@@ -474,13 +476,13 @@ stateDiagram-v2
 | Language | Python 3.12 | The coding language |
 | Package manager | **uv** | Installs Python and the tools into `.venv` |
 | Screens | **Streamlit** | Makes the HR web pages, in `frontend/`. Each page has its own `.css` file. ✅ Decided |
-| Webhooks | **FastAPI** | Only receives data from outside my app: ElevenLabs call results (Day 5) and the online CV form (Day 11). The pages call Python directly. ✅ Decided |
+| Webhooks | **FastAPI** | Only receives data from outside my app: ElevenLabs call results. *(The Day 11 online CV form was dropped on 6 Nov.)* The pages call Python directly. ✅ Decided |
 | Steps and HR stops | **LangGraph** | Controls the flow and waits for HR |
 | Talking to the AI | **LangChain** | Sends prompts and gets neat answers back |
 | AI model | **Groq** (with `langchain-groq`) | The "brain". The model name is set in `.env` |
 | Checking data | Pydantic | Makes sure data has the right shape |
 | Login | bcrypt | Scrambles passwords so they're never saved as plain text |
-| Resume search (chat) | Chroma + embeddings | Finds resume parts that match HR's question (for the RAG chat). Groq does not make embeddings, so this needs a separate tool, chosen on Day 10 |
+| Resume search (chat) | ~~Chroma + embeddings~~ | ❌ Dropped on 6 Nov with the RAG chat. Notes only: `information/rag.md` |
 | Online CV form | *(to be chosen)* | Where candidates send their CV |
 | Database | **SQLite** + hand-written SQL | Saves everything in one file. I write the tables, queries and indexes myself. SQLAlchemy only runs them with `text()`. ✅ Decided |
 | Reading resumes | **MarkItDown** | A Microsoft library that pulls the words out of PDF and Word files with one simple call |
@@ -505,7 +507,7 @@ stateDiagram-v2
 ```
 HR_Automation/
 ├── app/
-│   ├── api/              # FastAPI, only for the Day 5 and Day 11 webhooks (main.py for now)
+│   ├── api/              # FastAPI, only for the ElevenLabs webhook (main.py for now)
 │   ├── agents/           # The 3 AI helpers, plus the AI Job Post Writer
 │   │   ├── resume_scoring/   # Agent 1, and reader.py (reads PDF and Word files)
 │   │   ├── job_writer/       # ⭐ Short idea -> full job draft (own Groq key)
@@ -570,7 +572,7 @@ uv sync
 # Start the app. The pages call the Python code directly, so this is the only command
 uv run streamlit run frontend/app.py
 
-# Later, only for the webhooks (Day 5 ElevenLabs results, Day 11 online CV form):
+# Later, only for the ElevenLabs results webhook (the Day 11 online CV form was dropped on 6 Nov):
 # uv run uvicorn app.api.main:app --reload
 ```
 
@@ -595,7 +597,7 @@ The `.env` file holds secret keys. **Never upload it to GitHub.**
 | `USE_MOCK_CALLS` | `true` = pretend call, `false` = real ElevenLabs call | `true` |
 | `ELEVENLABS_API_KEY` | The password for ElevenLabs | `...` |
 | `ELEVENLABS_AGENT_ID` | The ID of my voice agent in ElevenLabs | `...` |
-| `SMTP_EMAIL` | The Gmail address that sends the CV Match Score email. Empty = MOCK (not really sent) | `...` |
+| `SMTP_EMAIL` | The Gmail address that sends the CV Match Score email. Empty = MOCK (not really sent). Works since 6 Nov | `...` |
 | `SMTP_APP_PASSWORD` | A Gmail **app password** (not my normal password) | `...` |
 | `ELEVENLABS_PHONE_NUMBER_ID` | The phone number ElevenLabs calls from | `...` |
 | `ELEVENLABS_WEBHOOK_SECRET` | Checks that call notes really came from ElevenLabs | `...` |

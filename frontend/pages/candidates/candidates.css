@@ -190,3 +190,14 @@
     color: var(--amber);
     font-size: 1.1rem;
 }
+
+/* History lines on the profile: the time in gray, then who and what */
+.history-line {
+    margin: 0 0 0.35rem 0;
+    font-size: 0.86rem;
+}
+.history-line span {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-right: 0.4rem;
+}

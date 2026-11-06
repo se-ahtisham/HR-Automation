@@ -11,6 +11,7 @@ PROJECT_ROOT = str(Path(__file__).parent.parent)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+from app.core.candidates import delete_old_candidates
 from components import FRONTEND, add_css, avatar
 
 st.set_page_config(page_title="Nexora Hire", page_icon=":material/auto_awesome:", layout="wide")
@@ -28,7 +29,6 @@ candidates = st.Page("pages/candidates/candidates.py", title="Candidates", icon=
 call_results = st.Page("pages/call_results/call_results.py", title="Call results", icon=":material/call:")
 interviews = st.Page("pages/interviews/interviews.py", title="Interviews", icon=":material/event:")
 score_cvs = st.Page("pages/score_cvs/score_cvs.py", title="Upload & score CVs", icon=":material/upload_file:")
-chat = st.Page("pages/chat/chat.py", title="Ask your candidates", icon=":material/forum:")
 todo = st.Page("pages/todo/todo.py", title="HR to-do list", icon=":material/checklist:")
 employees = st.Page("pages/employees/employees.py", title="Employees", icon=":material/badge:")
 settings = st.Page("pages/settings/settings.py", title="Settings", icon=":material/settings:")
@@ -44,7 +44,7 @@ if user is None:
 menu = {
     "Overview": [dashboard],
     "Hiring": [jobs, score_cvs, candidates, call_results, interviews],
-    "Tools": [chat, todo],
+    "Tools": [todo],
     "Manage": [employees, settings],
 }
 
@@ -80,5 +80,10 @@ with st.sidebar:
         if st.button("Log out", icon=":material/logout:", width="stretch"):
             st.session_state.user = None
             st.rerun()
+
+# Privacy: once per login, delete candidates older than the "keep data" days (90 by default)
+if "old_data_cleaned" not in st.session_state:
+    delete_old_candidates()
+    st.session_state.old_data_cleaned = True
 
 page.run()

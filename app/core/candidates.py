@@ -5,7 +5,7 @@ from pathlib import Path
 from sqlalchemy import text
 
 from app.core.audit import add_audit_event
-from app.core.database.database import engine
+from app.core.database.database import engine, get_one, run_sql
 from app.core.status import change_status
 
 
@@ -79,3 +79,34 @@ def delete_candidate(candidate_id, hr_email):
     if resume_path:
         Path(resume_path).unlink(missing_ok=True)
     add_audit_event(hr_email, "Candidate deleted", "candidate", candidate_id)
+
+
+# Fix: HR changes a candidate's details (the CV reader can get them wrong). Gives back an error message, or None when saved
+def fix_candidate(candidate_id, name, email, phone, hr_email):
+    if not name.strip():
+        return "Please write the name."
+    if email.strip() and ("@" not in email or "." not in email):
+        return "Please write a real email address."
+    # One person applies only once, so 2 candidates can't share an email
+    if email.strip() and get_one("SELECT id FROM candidates WHERE email = :email AND id != :id",
+                                 {"email": email.strip().lower(), "id": candidate_id}):
+        return "Another candidate already has this email."
+    run_sql(
+        "UPDATE candidates SET name = :name, email = :email, phone = :phone WHERE id = :id",
+        {"id": candidate_id, "name": name.strip(), "email": email.strip().lower(), "phone": phone.strip()},
+    )
+    # Never put the details themselves in the audit log
+    add_audit_event(hr_email, "Details fixed", "candidate", candidate_id)
+    return None
+
+
+# Privacy: deletes candidates older than the "keep data" days (Settings, 90 by default). Gives back how many
+def delete_old_candidates():
+    row = get_one("SELECT keep_data_days FROM scheduling_settings WHERE id = 1")
+    days = row.keep_data_days if row else 90
+    with engine.begin() as conn:
+        old_ids = conn.execute(text("SELECT id FROM candidates WHERE created_at < datetime('now', :age)"),
+                               {"age": f"-{days} days"}).scalars().all()
+    for candidate_id in old_ids:
+        delete_candidate(candidate_id, f"auto clean-up (older than {days} days)")
+    return len(old_ids)
