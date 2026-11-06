@@ -35,10 +35,16 @@ before = {
     "scores": get_one("SELECT COUNT(*) AS n FROM resume_evaluations").n,
     "emails": get_one("SELECT COUNT(*) AS n FROM communication_logs").n,
 }
-check("R1 data is still there after the restart", before["candidates"] == 1 and before["scores"] == 1, before)
+check("R1 data is still there after the restart", before["candidates"] == 1 and before["scores"] == 1 and before["emails"] == 2, before)
 
 # Try the score email again → must not send twice
 check("R2 score email is not sent twice", send_score_email(candidate_id, "hr@test") == "Already sent")
+
+# Try the interview invite again → must not send twice
+import json
+from app.agents.scheduling.save_interview import list_interviews, send_invite
+interview = list_interviews()[0]
+check("R2b invite is not sent twice", send_invite(interview["id"], json.loads(interview["proposed_slots"])[0], "x", "y", "hr@test") == "Already sent")
 
 # Try the same CV again → must not make a 2nd candidate or a 2nd score (no 2nd AI call)
 try:

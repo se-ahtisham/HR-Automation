@@ -8,7 +8,7 @@ from app.core.candidates import list_candidates
 from app.core.database.database import get_one
 from app.core.hr_tasks import list_tasks, set_done
 from app.core.jobs import list_jobs
-from components import avatar, empty_state, load_page_css, score_gauge, stat_tile, status_badge, svg_image
+from components import avatar, empty_state, is_hidden, load_page_css, score_gauge, shown_name, stat_tile, status_badge, svg_image
 
 load_page_css(__file__)
 
@@ -95,7 +95,7 @@ with left:
                     """
                 rows += f"""
                     <tr>
-                        <td><div class="who">{avatar(c['name'], 'sm')}<div><b>{escape(c['name'])}</b><small>{escape(c['job_title'])}</small></div></div></td>
+                        <td><div class="who">{avatar(c['name'], 'sm', hidden=is_hidden(c['current_status']))}<div><b>{escape(shown_name(c['id'], c['name'], c['current_status']))}</b><small>{escape(c['job_title'])}</small></div></div></td>
                         <td>{score}</td>
                         <td>{status_badge(c['current_status'])}</td>
                     </tr>

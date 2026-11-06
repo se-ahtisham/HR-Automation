@@ -1,10 +1,12 @@
-# Day 8 full test run: job → CV → score → approve → score email → to-do → dashboard → history → fix → delete.
+# Day 8 full test run: job → CV → score → approve → score email → (pretend) call → approve for interview →
+# Agent 3 finds a time → HR sends the invite → to-do → dashboard → history → fix → delete. (Schedule steps added on Day 7.)
 # Uses the TEST database (DATABASE_URL), a fake CV, and MOCK email (no real email is sent).
 # Run it (PowerShell), never on my real database:
 #   $env:DATABASE_URL = "sqlite:///./tests/test.db"; uv run python -m app.core.database.init_db
 #   uv run python tests/full_run.py all
 # Restart test: delete tests/test.db, init_db again, then:  full_run.py first  →  restart_run.py
 import io
+import json
 import os
 import sys
 import zipfile
@@ -21,7 +23,11 @@ from streamlit.testing.v1 import AppTest
 import app.core.database.uploaded_cv as uploaded_cv
 from app.agents.resume_scoring.reader import FileProblem
 from app.core.audit import list_history
-from app.core.candidates import approve_for_calling, delete_old_candidates, fix_candidate, list_candidates
+from app.agents.scheduling.flow import plan_interview
+from app.agents.scheduling.save_interview import list_interviews, send_invite
+from app.agents.script_agent.save_call import save_call_result, save_call_started
+from app.core.candidates import (approve_for_calling, approve_for_interview, delete_old_candidates, fix_candidate,
+                                 list_candidates)
 from app.core.cv_scoring import score_cv_for_job
 from app.core.database.database import get_one, run_sql
 from app.core.employees import save_employee
@@ -69,7 +75,8 @@ CV = make_docx([
 if STEP in ("all", "first"):
     # 1. Employees and a job
     sara = save_employee(None, "Sara Interviewer", "sara.int@example.com", "Interviewer", "Backend", "Asia/Karachi", True,
-                         [{"day_of_week": "Monday", "start_time": "10:00", "end_time": "13:00"}], HR)
+                         [{"day_of_week": day, "start_time": "10:00", "end_time": "13:00"}
+                          for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]], HR)
     save_job("Junior Python Developer", "We need a junior Python developer for APIs with FastAPI and SQL.", "Junior", 0, "Lahore",
              "Hybrid", sara, [{"name": "Python", "type": "Must-have", "required_level": 3, "min_years": None},
                               {"name": "SQL", "type": "Must-have", "required_level": 2, "min_years": None}], HR)
@@ -95,8 +102,26 @@ if STEP in ("all", "first"):
     check("4 approved for calling", get_one("SELECT current_status FROM candidates WHERE id = :id", {"id": candidate_id}).current_status == "Approved for Calling")
     check("5 score email (MOCK)", send_score_email(candidate_id, HR) == "MOCK")
 
-    # 6. The call (not built yet: needs Twilio)
-    check("6 phone call", True, "SKIPPED: the calling agent is the last task (needs a Twilio number)")
+    # 6. The call: a PRETEND call result (the real phone call needs Twilio, the last task)
+    check("6 real phone call", True, "SKIPPED: the calling agent is the last task (needs a Twilio number)")
+    save_call_started(candidate_id, "pretend-call-1", HR)
+    save_call_result(candidate_id, "pretend-call-1", {"consent_given": True, "available_date_time": "any working day, any time",
+                                                     "previous_job": "Intern at TestSoft", "reason_for_shift": "To grow",
+                                                     "summary": "Pretend call for the test."}, HR)
+    check("6 pretend call saved, status Screening Completed (HR Review)",
+          get_one("SELECT current_status FROM candidates WHERE id = :id", {"id": candidate_id}).current_status == "Screening Completed (HR Review)")
+
+    # 6b. HR stop #2 → Agent 3 finds a time → HR stop #3: HR sends the invite (MOCK)
+    approve_for_interview(candidate_id, HR)
+    check("6b Agent 3 proposes times", plan_interview(candidate_id, HR) == "Proposed")
+    interview = list_interviews()[0]
+    slots = json.loads(interview["proposed_slots"])
+    draft = json.loads(interview["email_draft"])
+    check("6b times are with Sara, inside her free time", all(s["interviewer"] == "Sara Interviewer" and "10:00" <= s["start"][11:] < "13:00" for s in slots),
+          [s["start"] for s in slots])
+    check("6b invite written", bool(draft["body"].strip()), draft["subject"])
+    check("6b invite sent once (MOCK)", send_invite(interview["id"], slots[0], draft["subject"], draft["body"], HR) == "MOCK"
+          and get_one("SELECT current_status FROM candidates WHERE id = :id", {"id": candidate_id}).current_status == "Interview Scheduled")
 
     # 7. A to-do
     add_task("Call Ayesha back about her interview time", "Human requested", candidate_id, "Test note", HR)
@@ -111,12 +136,13 @@ if STEP in ("all", "second"):
     at.run()
     page_text = " ".join(str(h.proto) for h in at.get("html"))
     check("8 dashboard loads", not at.exception, at.exception)
-    check("8 dashboard shows the candidate and activity", "Ayesha Khan" in page_text and "Approved for calling" in page_text)
+    check("8 dashboard shows the candidate and activity", "Ayesha Khan" in page_text and "Interview invite" in page_text)
     check("8 dashboard shows the open to-do", any(c.label.startswith("Call Ayesha") for c in at.checkbox))
 
     # 9. History on the profile
     actions = [event["action"] for event in list_history("candidate", candidate_id)]
-    check("9 history has every step", {"CV uploaded", "CV scored", "Approved for calling", "CV Match Score email"} <= set(actions), actions)
+    check("9 history has every step", {"CV uploaded", "CV scored", "Approved for calling", "CV Match Score email", "Call result saved",
+                                       "Approved for interview", "Interview times proposed", "Interview invite"} <= set(actions), actions)
     at2 = AppTest.from_file(str(Path(__file__).parents[1] / "frontend" / "pages" / "candidates" / "candidates.py"), default_timeout=60)
     at2.session_state.user = {"name": "HR Test", "email": HR, "role": "HR"}
     at2.session_state.picked_candidate = candidate_id

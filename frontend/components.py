@@ -190,3 +190,15 @@ def empty_state(icon_name, title, text):
 def icon_list(items, icon):
     rows = "".join(f'<li><span class="mi">{icon}</span>{item}</li>' for item in items)
     return f'<ul class="icon-list">{rows}</ul>'
+
+
+# Blind Review Mode: while it is on, HR sees "Candidate #7" (no name, email or phone) until they approve them for calling
+LOCKED_STATUSES = ["Resume Received", "Scored (HR Review)", "Needs Manual Review", "Closed"]
+
+
+def is_hidden(status):
+    return st.session_state.get("blind", True) and status in LOCKED_STATUSES
+
+
+def shown_name(candidate_id, name, status):
+    return f"Candidate #{candidate_id}" if is_hidden(status) else name

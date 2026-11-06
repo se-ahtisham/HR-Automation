@@ -5,7 +5,9 @@ from pathlib import Path
 from sqlalchemy import text
 
 from app.core.audit import add_audit_event
+from app.core.blind import clean_cv
 from app.core.database.database import engine, get_one, run_sql
+from app.core.settings import get_settings
 from app.core.status import change_status
 
 
@@ -43,7 +45,8 @@ def saved_score(candidate):
         "strengths": json.loads(candidate["strengths"]),
         "weak_points": json.loads(candidate["weak_points"]),
         "missing_skills": json.loads(candidate["missing_skills"]),
-        "proof_checks": [{"line": line, "found": line in (candidate["resume_text"] or "")}
+        # The AI quoted the cleaned CV (Blind Mode), so check the quotes against the cleaned copy
+        "proof_checks": [{"line": line, "found": line in clean_cv(candidate["resume_text"] or "", candidate["name"])}
                          for line in json.loads(candidate["proof_lines"])],
         "trick_lines": json.loads(candidate["warnings"] or "[]"),
         "model": candidate["model_version"],
@@ -52,15 +55,16 @@ def saved_score(candidate):
 
 
 # HR stop #1: HR approves the candidate, so the script agent can call them
-def approve_for_calling(candidate_id, hr_email):
+# blind = was Blind Mode on? The log keeps it, so I can see later if HR decided without seeing who it was
+def approve_for_calling(candidate_id, hr_email, blind=False):
     change_status(candidate_id, "Approved for Calling")
-    add_audit_event(hr_email, "Approved for calling", "candidate", candidate_id)
+    add_audit_event(hr_email, "Approved for calling", "candidate", candidate_id, f"blind: {'yes' if blind else 'no'}")
 
 
 # HR stop #1: HR declines the candidate. The reason is saved in the audit log
-def decline(candidate_id, reason, hr_email):
+def decline(candidate_id, reason, hr_email, blind=False):
     change_status(candidate_id, "Closed")
-    add_audit_event(hr_email, "Declined", "candidate", candidate_id, reason)
+    add_audit_event(hr_email, "Declined", "candidate", candidate_id, f"{reason} (blind: {'yes' if blind else 'no'})")
 
 
 # Deletes a candidate for good: their rows in every table, and their CV file.
@@ -102,11 +106,16 @@ def fix_candidate(candidate_id, name, email, phone, hr_email):
 
 # Privacy: deletes candidates older than the "keep data" days (Settings, 90 by default). Gives back how many
 def delete_old_candidates():
-    row = get_one("SELECT keep_data_days FROM scheduling_settings WHERE id = 1")
-    days = row.keep_data_days if row else 90
+    days = get_settings()["keep_data_days"]
     with engine.begin() as conn:
         old_ids = conn.execute(text("SELECT id FROM candidates WHERE created_at < datetime('now', :age)"),
                                {"age": f"-{days} days"}).scalars().all()
     for candidate_id in old_ids:
         delete_candidate(candidate_id, f"auto clean-up (older than {days} days)")
     return len(old_ids)
+
+
+# HR stop #2: after reading the call summary, HR approves the candidate for an interview (then Agent 3 finds a time)
+def approve_for_interview(candidate_id, hr_email):
+    change_status(candidate_id, "Approved for Interview")
+    add_audit_event(hr_email, "Approved for interview", "candidate", candidate_id)

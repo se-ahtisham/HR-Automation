@@ -10,3 +10,14 @@
     background: linear-gradient(180deg, #F7FEF9, #FFFFFF);
     border-color: #CDEFD8;
 }
+
+/* Recent changes: the time in gray */
+.change {
+    margin: 0 0 0.35rem 0;
+    font-size: 0.86rem;
+}
+.change span {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-right: 0.4rem;
+}

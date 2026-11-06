@@ -127,7 +127,11 @@ def send_score_button(candidate_id, hr_email):
 
 
 # HR can see the designed email before (or after) sending it
-def show_email_preview(candidate_id):
+def show_email_preview(candidate_id, hidden=False):
+    # Blind Mode: the email says the candidate's name, so it isn't shown
+    if hidden:
+        st.caption("The email preview is hidden in Blind Mode (it shows the name).")
+        return
     with st.expander("Preview the score email", icon=":material/visibility:"):
         to_email, subject, html = write_score_email(candidate_id)
         st.caption(f"To: {to_email or 'no email found'} · Subject: {subject}")

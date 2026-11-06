@@ -69,7 +69,7 @@ But HR always has the final say. There are **3 stop points** where the app waits
 - 📞 Real phone calls with **ElevenLabs** voice AI, or a pretend call for demos
 - 📝 Call summaries keep "what the candidate said" apart from "what the AI thinks"
 - 📅 Finds interview times and gets the time zones right
-- ✉️ Writes the invite email, but sends it only after HR says yes
+- ✉️ Writes the invite email, but sends it only after HR says yes *(built 6 Nov: Agent 3 reads the candidate's times from the call, finds free interviewers inside the Settings rules, writes the invite; HR picks a time, edits, and clicks Approve & send; a failed send can be resent; no time → an HR to-do)*
 - 📊 A dashboard showing every candidate, their status and full history *(built 6 Nov: real numbers, newest candidates, to-dos, recent activity; each candidate's profile has a History box)*
 - 🔁 Never calls or emails the same person twice by mistake *(tested 6 Nov with a restart test: emails, uploads and approvals are never repeated; the call part is tested when the calling agent is built)*
 - 🔐 Login with roles (Admin, HR, Hiring Manager). Each person sees only what they're allowed to
@@ -80,7 +80,7 @@ But HR always has the final say. There are **3 stop points** where the app waits
 
 ### ⭐ Extra features (not in the project PDF, added to stand out)
 
-- 🙈 **Blind Review Mode:** a switch that hides the name, photo, email, age hints and university, so HR sees "Candidate #7". This helps HR judge only skills, fairly.
+- 🙈 **Blind Review Mode:** a switch that hides the name, photo, email, age hints and university, so HR sees "Candidate #7". This helps HR judge only skills, fairly. *(Built 7 Nov: the AI scores a cleaned CV without the name, email, phone or links; the **Blind Mode** switch in the menu shows "Candidate #7" until HR approves for calling; the log says if a decision was made blind. Addresses, universities and age hints are not removed yet.)*
 - ✍️ **AI Job Post Writer:** HR types a few lines, and the AI writes the full job post and suggests the skills, weights, level and call questions. HR always checks and edits before saving.
 - ~~💬 **"Ask Your Candidates" Chat**~~ ❌ *Dropped on 6 Nov (no time). How it would work: `information/rag.md`.* Old plan: HR asks things like *"Who has AWS and has led a team?"* and gets answers with proof lines from the resumes. It uses **RAG**: first search the resumes, then let the AI answer using only what it found.
 - 📬 **CV Match Score Email:** when a candidate sends their CV through the online form, the AI scores it and emails them their **match score out of 100**, their **strengths**, their **weak points** and their **missing skills**. HR sees the same details.
@@ -335,6 +335,8 @@ Everyone must **log in**. Passwords are saved scrambled (hashed), never as plain
 Candidates don't log in. They only use the online form and get calls and emails.
 
 ### Scheduling Settings page
+
+*(Built 7 Nov: interview length, break, time zone, online or in the office, days ahead, notice, times to offer, max per day, call tries and how long to keep data. A wrong value is refused, and every change is saved in the history. Interviews can be **moved** or **cancelled** from the Interviews page, with an email to the candidate.)*
 
 HR can change these rules any time:
 

@@ -5,7 +5,7 @@ import streamlit as st
 
 from app.core.candidates import list_candidates
 from app.core.hr_tasks import TASK_TYPES, add_task, delete_task, edit_task, list_tasks, set_done
-from components import empty_state, load_page_css, page_header, pill
+from components import empty_state, load_page_css, page_header, pill, shown_name
 
 load_page_css(__file__)
 page_header("HR to-do list", "Things that need a human: no free time, a locked file, a request for a person.", section="Tools")
@@ -16,7 +16,8 @@ user = st.session_state.user
 TYPE_COLORS = {"No free slot": "amber", "Manual review": "red", "Human requested": "violet", "Language": "blue", "Other": "gray"}
 
 # The candidates HR can link a task to. None = not about one candidate
-candidates = {c["id"]: c["name"] for c in list_candidates()}
+# Blind Mode: "Candidate #7" until HR approves them for calling
+candidates = {c["id"]: shown_name(c["id"], c["name"], c["current_status"]) for c in list_candidates()}
 
 # A number in the form keys. Making it bigger after saving gives empty boxes
 if "task_form" not in st.session_state:
@@ -57,7 +58,7 @@ for task in tasks:
             set_done(task["id"], ticked, user["email"])
             st.rerun()
 
-        who = escape(task["candidate_name"]) if task["candidate_name"] else "No candidate"
+        who = escape(candidates.get(task["candidate_id"], "No candidate")) if task["candidate_id"] else "No candidate"
         note = f'<p class="task-note">{escape(task["note"])}</p>' if task["note"] else ""
         text_col.html(f"""
             <p class="task-text {'task-done' if done else ''}">{escape(task['title'])}</p>

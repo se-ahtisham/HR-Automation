@@ -8,10 +8,12 @@ import streamlit as st
 from app.agents.script_agent.agent import call_candidate, get_call_result
 from app.agents.script_agent.save_call import save_call_result, save_call_started
 from app.core.audit import list_history
-from app.core.candidates import approve_for_calling, decline, delete_candidate, fix_candidate, list_candidates, saved_score
+from app.core.candidates import (approve_for_calling, approve_for_interview, decline, delete_candidate, fix_candidate,
+                                 list_candidates, saved_score)
 from app.core.cv_scoring import job_skills
 from app.core.jobs import list_jobs
-from components import FRONTEND, add_css, avatar, card_title, empty_state, icon_list, load_page_css, page_header, status_badge
+from components import (FRONTEND, add_css, avatar, card_title, empty_state, icon_list, is_hidden, load_page_css, page_header,
+                        shown_name, status_badge)
 from score_view import send_score_button, show_email_preview, show_score_result
 
 load_page_css(__file__)
@@ -32,26 +34,35 @@ if c is None:
 
 if c is not None:
 
+    # Blind Mode: until HR approves for calling, show "Candidate #7" and hide the email and phone
+    hidden = is_hidden(c["current_status"])
+    name = shown_name(c["id"], c["name"], c["current_status"])
+
     back_col, _, fix_col, delete_col = st.columns([1.5, 2, 1, 1], vertical_alignment="center")
     if back_col.button("Back to all candidates", icon=":material/arrow_back:", type="tertiary"):
         st.session_state.picked_candidate = None
         st.rerun()
 
     # Fix: the CV reader can get a name, email or phone wrong, so HR can correct them
-    with fix_col.popover("Fix details", icon=":material/edit:", width="stretch"):
-        new_name = st.text_input("Name", value=c["name"], key=f"fix_name_{c['id']}")
-        new_email = st.text_input("Email", value=c["email"] or "", key=f"fix_email_{c['id']}")
-        new_phone = st.text_input("Phone (with country code)", value=c["phone"] or "", key=f"fix_phone_{c['id']}")
-        if st.button("Save", type="primary", key=f"fix_save_{c['id']}", width="stretch"):
-            problem = fix_candidate(c["id"], new_name, new_email, new_phone, user["email"])
-            if problem:
-                st.error(problem, icon=":material/error:")
-            else:
-                st.rerun()
+    # In Blind Mode the details aren't sent to the page at all, so the button is just disabled
+    if hidden:
+        fix_col.button("Fix details", icon=":material/edit:", width="stretch", disabled=True,
+                       help="Turn off Blind Mode to see and fix the details.")
+    else:
+        with fix_col.popover("Fix details", icon=":material/edit:", width="stretch"):
+            new_name = st.text_input("Name", value=c["name"], key=f"fix_name_{c['id']}")
+            new_email = st.text_input("Email", value=c["email"] or "", key=f"fix_email_{c['id']}")
+            new_phone = st.text_input("Phone (with country code)", value=c["phone"] or "", key=f"fix_phone_{c['id']}")
+            if st.button("Save", type="primary", key=f"fix_save_{c['id']}", width="stretch"):
+                problem = fix_candidate(c["id"], new_name, new_email, new_phone, user["email"])
+                if problem:
+                    st.error(problem, icon=":material/error:")
+                else:
+                    st.rerun()
 
     # Delete for good: the popover asks again, so one wrong click doesn't delete anyone
     with delete_col.popover("Delete", icon=":material/delete:", width="stretch"):
-        st.write(f"Delete **{c['name']}**, their score, their call and their CV file? This can't be undone.")
+        st.write(f"Delete **{name}**, their score, their call and their CV file? This can't be undone.")
         if st.button("Yes, delete", type="primary", icon=":material/delete_forever:", width="stretch"):
             delete_candidate(c["id"], user["email"])
             st.session_state.picked_candidate = None
@@ -60,12 +71,13 @@ if c is not None:
     with st.container(key="card-head"):
         st.html(f"""
             <div class="head">
-                {avatar(c['name'], 'lg')}
+                {avatar(c['name'], 'lg', hidden=hidden)}
                 <div>
-                    <h2 class="detail-name">{escape(c['name'])}</h2>
+                    <h2 class="detail-name">{escape(name)}</h2>
                     <p class="detail-meta">{escape(c['job_title'])} · {c['level']} · Score {c['total_score'] or '-'}/100</p>
                     {status_badge(c['current_status'])}
-                    <p class="contact">{escape(c['email'] or 'No email')} &nbsp;·&nbsp; {escape(c['phone'] or 'No phone')}</p>
+                    <p class="contact">{'Details unlock when you approve for calling (Blind Mode).' if hidden else
+                                       escape(c['email'] or 'No email') + ' &nbsp;·&nbsp; ' + escape(c['phone'] or 'No phone')}</p>
                 </div>
             </div>
         """)
@@ -84,12 +96,12 @@ if c is not None:
         with st.container(key="card-decision"):
             st.html('<p class="section-title">Your decision</p>')
             if st.button("Approved for calling", type="primary", icon=":material/check:", width="stretch"):
-                approve_for_calling(c["id"], user["email"])
+                approve_for_calling(c["id"], user["email"], blind=hidden)
                 st.rerun()
             reason = st.text_input("Reason to decline", placeholder="Why not this candidate?")
             if st.button("Decline", icon=":material/close:", width="stretch"):
                 if reason.strip():
-                    decline(c["id"], reason.strip(), user["email"])
+                    decline(c["id"], reason.strip(), user["email"], blind=hidden)
                     st.rerun()
                 else:
                     st.error("Please write a reason first.")
@@ -120,6 +132,22 @@ if c is not None:
                     save_call_result(c["id"], c["conversation_id"], result, user["email"])
                     st.rerun()
 
+    # ---------- HR stop #2: after reading the call summary, approve for an interview, or decline ----------
+    if status == "Screening Completed (HR Review)":
+        with st.container(key="card-decision"):
+            st.html('<p class="section-title">Your decision after the call</p>'
+                    '<p class="hint">Read what the candidate said below. Approving sends them to Interviews, where Agent 3 finds a time.</p>')
+            if st.button("Approve for interview", type="primary", icon=":material/event_available:", width="stretch"):
+                approve_for_interview(c["id"], user["email"])
+                st.rerun()
+            reason = st.text_input("Reason to decline", placeholder="Why not this candidate?", key="decline_after_call")
+            if st.button("Decline", icon=":material/close:", width="stretch", key="decline_after_call_button"):
+                if reason.strip():
+                    decline(c["id"], reason.strip(), user["email"])
+                    st.rerun()
+                else:
+                    st.error("Please write a reason first.")
+
     # ---------- What the candidate said, saved in the database ----------
     if c["call_status"] == "Done":
         answers = json.loads(c["answers"] or "{}")
@@ -137,9 +165,9 @@ if c is not None:
         st.error("This CV could not be read or scored. A human must check it.", icon=":material/error:")
     else:
         send_score_button(c["id"], user["email"])
-        show_email_preview(c["id"])
+        show_email_preview(c["id"], hidden)
         job = next(j for j in list_jobs() if j["id"] == c["job_id"])
-        show_score_result(saved_score(c), c["level"], job_skills(job), c["name"])
+        show_score_result(saved_score(c), c["level"], job_skills(job), name)
     st.stop()
 
 
@@ -151,8 +179,8 @@ if not candidates:
     st.stop()
 
 # One simple filter: the status. It starts on the candidates HR approved for calling
-STATUSES = ["Approved for Calling", "Screening Pending", "Screening Completed (HR Review)",
-            "Scored (HR Review)", "Needs Manual Review", "Closed"]
+STATUSES = ["Approved for Calling", "Screening Pending", "Screening Completed (HR Review)", "Approved for Interview",
+            "Interview Proposed", "Interview Scheduled", "Scored (HR Review)", "Needs Manual Review", "Closed"]
 status = st.selectbox("Status", STATUSES, format_func=lambda s: f"{s} · {sum(c['current_status'] == s for c in candidates)}")
 people = [c for c in candidates if c["current_status"] == status]
 if not people:
@@ -164,8 +192,8 @@ for number, c in enumerate(people):
         with st.container(key=f"card-person-{c['id']}"):
             score = f'{c["total_score"]}<small>/100</small>' if c["total_score"] is not None else "No score"
             st.html(f"""
-                <div class="person-top">{avatar(c['name'], 'md')}<span class="score-pill">{score}</span></div>
-                <p class="person-name">{escape(c['name'])}</p>
+                <div class="person-top">{avatar(c['name'], 'md', hidden=is_hidden(c['current_status']))}<span class="score-pill">{score}</span></div>
+                <p class="person-name">{escape(shown_name(c['id'], c['name'], c['current_status']))}</p>
                 <p class="person-job">{escape(c['job_title'])}</p>
                 {status_badge(c['current_status'])}
             """)

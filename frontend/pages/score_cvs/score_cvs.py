@@ -9,7 +9,7 @@ from app.core.candidates import approve_for_calling
 from app.core.cv_scoring import job_skills, score_cv_for_job
 from app.core.database.database import get_one
 from app.core.jobs import list_jobs
-from components import FRONTEND, add_css, chip, empty_state, icon, load_page_css, page_header, status_badge
+from components import FRONTEND, add_css, chip, empty_state, icon, is_hidden, load_page_css, page_header, shown_name, status_badge
 from score_view import send_score_button, show_email_preview, show_score_result
 
 load_page_css(__file__)
@@ -87,17 +87,20 @@ if not scored:
 
 # ---------- Saved: who (read from the CV), and where they are now ----------
 person = get_one("SELECT name, email, phone, current_status FROM candidates WHERE id = :id", {"id": scored["candidate_id"]})
+# Blind Mode: until HR approves for calling, show "Candidate #7" and hide the contact details
+hidden = is_hidden(person.current_status)
+name = shown_name(scored["candidate_id"], person.name, person.current_status)
+contact = "Details hidden (Blind Mode)" if hidden else f"{escape(person.email or 'No email')} · {escape(person.phone or 'No phone')}"
 with st.container(key="card-saved"):
     info_col, button_col = st.columns([3, 1.3], vertical_alignment="center")
     info_col.html(f"""
-        <p class="saved-name">{escape(person.name)} <small>· {escape(person.email or 'No email')} ·
-            {escape(person.phone or 'No phone')} · Candidate #{scored['candidate_id']}</small></p>
+        <p class="saved-name">{escape(name)} <small>· {contact} · Candidate #{scored['candidate_id']}</small></p>
         <p class="saved-meta">{escape(scored['job_title'])} &nbsp;{status_badge(person.current_status)}</p>
     """)
     # HR stop #1: approving moves the candidate to Candidates, where the script agent can call them
     if person.current_status == "Scored (HR Review)":
         if button_col.button("Approved for calling", type="primary", icon=":material/check:", width="stretch"):
-            approve_for_calling(scored["candidate_id"], user["email"])
+            approve_for_calling(scored["candidate_id"], user["email"], blind=hidden)
             st.rerun()
     elif person.current_status == "Approved for Calling":
         button_col.page_link("pages/candidates/candidates.py", label="Go to Candidates", icon=":material/group:")
@@ -107,5 +110,5 @@ with st.container(key="card-saved"):
             send_score_button(scored["candidate_id"], user["email"])
 
 if scored["result"] is not None:
-    show_email_preview(scored["candidate_id"])
-    show_score_result(scored["result"], scored["level"], scored["skills"], person.name)
+    show_email_preview(scored["candidate_id"], hidden)
+    show_score_result(scored["result"], scored["level"], scored["skills"], name)

@@ -4,6 +4,7 @@ from app.agents.resume_scoring.safety import CVResult
 from app.agents.resume_scoring.save_score import save_score
 from app.agents.resume_scoring.score_with_checks import score_with_checks
 from app.core.audit import add_audit_event
+from app.core.blind import clean_cv
 from app.core.database.database import get_one
 from app.core.database.uploaded_cv import save_uploaded_cv
 from app.core.status import change_status
@@ -21,8 +22,9 @@ def score_cv_for_job(job, file_name, data, hr_email):
     if status == "Needs Manual Review":
         return candidate_id, None
 
-    resume_text = get_one("SELECT resume_text FROM candidates WHERE id = :id", {"id": candidate_id}).resume_text
-    result = score_with_checks(job["level"], job_skills(job), job["job_description"], resume_text)
+    # Blind Review Mode: the AI only sees a cleaned copy (no name, email, phone or links), so it judges the skills
+    cv = get_one("SELECT name, resume_text FROM candidates WHERE id = :id", {"id": candidate_id})
+    result = score_with_checks(job["level"], job_skills(job), job["job_description"], clean_cv(cv.resume_text, cv.name))
 
     # The AI failed 3 times, so a human must check this CV
     if result is None:

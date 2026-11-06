@@ -76,6 +76,10 @@ with st.sidebar:
                 with st.container(key=f"nav-{slug}{active}"):
                     st.page_link(menu_page)
 
+    # Blind Review Mode, for every page. On by default: HR judges the skills first, then sees who it is
+    st.session_state.blind = st.toggle("Blind Mode", value=st.session_state.get("blind", True), key="blind_switch",
+                                       help="Hides name, email and phone until you approve a candidate for calling.")
+
     with st.container(key="logout"):
         if st.button("Log out", icon=":material/logout:", width="stretch"):
             st.session_state.user = None
