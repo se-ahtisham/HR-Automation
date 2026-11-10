@@ -488,7 +488,7 @@ stateDiagram-v2
 | Online CV form | *(to be chosen)* | Where candidates send their CV |
 | Database | **SQLite** + hand-written SQL | Saves everything in one file. I write the tables, queries and indexes myself. SQLAlchemy only runs them with `text()`. ✅ Decided |
 | Reading resumes | **MarkItDown** | A Microsoft library that pulls the words out of PDF and Word files with one simple call |
-| Phone calls | **ElevenLabs** ✅ Decided 5 Nov | Voice AI agent. The same 4 questions for every job: congratulations, available date and time, previous job, why shift. The **script agent** phones the candidate (Twilio number in ElevenLabs) when HR clicks Call, and saves the answers and a summary of the call. Low limits: 3 min per call, 20 calls a day. Notes: `information/elevenlabs.md` |
+| Phone calls | **ElevenLabs** ✅ Decided 5 Nov | Voice AI agent. The same 4 questions for every job: congratulations, available date and time, previous job, why shift. The **script agent** phones the candidate (Twilio number in ElevenLabs) when HR clicks Call, and saves the answers and a summary of the call. Low limits: a call ends by itself after 72 seconds (1.2 min), so the free ElevenLabs minutes give about 12 test calls; 20 calls a day. Notes: `information/elevenlabs.md` |
 | Calendar and email | Pretend (mock) versions | Fake versions for safe testing |
 | Tests | pytest | Checks that the code works |
 

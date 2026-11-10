@@ -20,6 +20,13 @@ if "employee_form" not in st.session_state:
     st.session_state.employee_form = 0
 
 
+# A time from the table as "09:00". On an empty table Streamlit gives text like "09:00:00", not a time
+def hhmm(value):
+    if isinstance(value, str):
+        return value[:5]
+    return value.strftime("%H:%M")
+
+
 # The form, used 2 times: empty to add a person, and filled in to edit one. person = {} means a new person
 def employee_form(person):
     employee_id = person.get("id")
@@ -57,8 +64,8 @@ def employee_form(person):
         # Turn the table into plain rows. Rows that are not filled in are skipped
         for _, row in table.iterrows():
             if isinstance(row["Day"], str) and pd.notna(row["From"]) and pd.notna(row["To"]):
-                free_times.append({"day_of_week": row["Day"], "start_time": row["From"].strftime("%H:%M"),
-                                   "end_time": row["To"].strftime("%H:%M")})
+                free_times.append({"day_of_week": row["Day"], "start_time": hhmm(row["From"]),
+                                   "end_time": hhmm(row["To"])})
 
     if st.button("Save", type="primary", icon=":material/save:", key=f"save_{k}"):
         problem = check_employee(employee_id, name, email, free_times)

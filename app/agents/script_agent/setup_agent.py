@@ -32,8 +32,8 @@ conversation_config = ConversationalConfig.model_validate({
     },
     # The cheapest English voice
     "tts": {"voice_id": "EXAVITQu4vr4xnSDxMaL", "model_id": "eleven_flash_v2"},
-    # Low limit: a call stops after 3 minutes
-    "conversation": {"max_duration_seconds": 180},
+    # Low limit: a call stops after 72 seconds (1.2 minutes), so the free ElevenLabs minutes (~15 a month) give about 10 calls
+    "conversation": {"max_duration_seconds": 72},
 })
 
 platform_settings = AgentPlatformSettingsRequestModel.model_validate({
