@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS candidates (
     job_id INTEGER REFERENCES jobs (id),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
+    phone TEXT, -- Read from the CV. The call agent calls this number
     resume_path TEXT,
     resume_text TEXT,
     current_status TEXT NOT NULL DEFAULT 'Resume Received',
@@ -13,7 +14,19 @@ CREATE TABLE IF NOT EXISTS candidates (
 CREATE INDEX IF NOT EXISTS idx_candidates_status
 ON candidates (current_status);
 
--- Stores company staff, their roles and whether they can interview
+-- Stores the HR accounts that log in to the app.
+-- Not the same as employees: employees are the staff HR adds and schedules for interviews
+CREATE TABLE IF NOT EXISTS hr_accounts (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL, -- Scrambled by bcrypt. Never the real password
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Stores company staff that HR adds: their roles, time zone and whether they can interview.
+-- They don't log in. HR sets their free times for scheduling
 CREATE TABLE IF NOT EXISTS employees (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
@@ -22,7 +35,6 @@ CREATE TABLE IF NOT EXISTS employees (
     team TEXT,
     timezone TEXT NOT NULL DEFAULT 'Asia/Karachi',
     can_interview INTEGER NOT NULL DEFAULT 0, -- Default false, because a new employee does not interview yet
-    password_hash TEXT,
     is_active INTEGER NOT NULL DEFAULT 1
 );
 
@@ -153,6 +165,7 @@ CREATE TABLE IF NOT EXISTS screenings (
     summary TEXT,
     next_step TEXT,
     call_tries INTEGER NOT NULL DEFAULT 0,
+    conversation_id TEXT, -- The call's id on ElevenLabs, to get the answers back
     reviewed_by INTEGER REFERENCES employees (id),
     reviewed_at TEXT,
     call_time TEXT
@@ -211,6 +224,8 @@ CREATE TABLE IF NOT EXISTS hr_tasks (
     id INTEGER PRIMARY KEY,
     candidate_id INTEGER REFERENCES candidates (id),
     title TEXT NOT NULL,
+    task_type TEXT NOT NULL DEFAULT 'Other', -- Like "No free slot" or "Human requested"
+    note TEXT, -- HR's own notes about the task
     status TEXT NOT NULL DEFAULT 'Open',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     done_at TEXT

@@ -1,0 +1,203 @@
+/* candidates.css: only for the Candidates page */
+
+/* ================= Step 1: filter panel ================= */
+.st-key-card-filter {
+    padding: 1.3rem 1.2rem;
+    gap: 0.5rem;
+}
+.filter-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 0.4rem 0;
+}
+.filter-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0.7rem 0 0 0;
+    padding-top: 0.8rem;
+    border-top: 1px solid #F2F2F9;
+}
+.filter-title + .filter-label {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0.2rem;
+}
+.st-key-card-filter label p {
+    font-size: 0.84rem;
+    line-height: 1.35;
+}
+
+/* ================= Step 1: card grid ================= */
+.grid-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0.35rem 0 0.2rem 0;
+}
+.grid-title span {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--muted);
+    margin-left: 0.4rem;
+}
+.empty {
+    padding: 2.5rem;
+    text-align: center;
+    color: var(--muted);
+    background: white;
+    border-radius: var(--radius);
+}
+
+[class*="st-key-card-person-"] {
+    padding: 1.2rem;
+    margin-bottom: 0.4rem;
+    gap: 0.8rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+[class*="st-key-card-person-"]:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+}
+.person-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.score-pill {
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 12px;
+    padding: 0.3rem 0.6rem;
+}
+.score-pill small {
+    font-size: 0.65rem;
+    font-weight: 500;
+    opacity: 0.7;
+}
+.score-pill.score-none {
+    background: #FFE6E6;
+    color: var(--red);
+    font-size: 0.75rem;
+}
+.person-name {
+    font-weight: 600;
+    font-size: 0.98rem;
+    margin: 0.7rem 0 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.person-job {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 0 0 0.6rem 0;
+}
+/* Room for 2 rows of tags, so every card is the same height and the buttons line up */
+.tags {
+    min-height: 4.6rem;
+    margin-bottom: 0.5rem;
+}
+
+/* ================= Step 2: detail ================= */
+.head {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+}
+.detail-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    padding: 0;
+}
+.detail-meta {
+    color: var(--muted);
+    margin: 0.1rem 0 0.4rem 0;
+    font-size: 0.9rem;
+}
+.contact {
+    color: var(--muted);
+    margin: 0.6rem 0 0 0;
+    font-size: 0.85rem;
+}
+
+.proof-line {
+    margin: 0.45rem 0;
+    padding: 0.65rem 1rem;
+    border-left: 3px solid var(--primary);
+    background: var(--primary-soft);
+    border-radius: 0 12px 12px 0;
+    font-size: 0.88rem;
+}
+
+/* One skill per row, in 4 columns */
+.skill-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 2.4fr;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #F2F2F9;
+    font-size: 0.88rem;
+}
+.skill-row small {
+    color: var(--muted);
+    display: block;
+    font-size: 0.72rem;
+}
+.skill-row .proof {
+    color: #5B6080;
+    font-style: italic;
+}
+.hint {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin: 0.8rem 0 0 0;
+}
+
+.email-line {
+    margin-top: 1rem;
+    font-size: 0.88rem;
+}
+
+.history {
+    list-style: none;
+    padding: 0 0 0 1.1rem;
+    margin: 0;
+    border-left: 2px solid #E7E4FD;
+}
+.history li {
+    padding: 0 0 0.9rem 0.4rem;
+    font-size: 0.88rem;
+}
+.history .time {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+
+/* The decision card has a purple line on top */
+.st-key-card-decision {
+    border-top: 4px solid var(--primary);
+}
+
+/* The small warning icon next to a name */
+.trick-dot .mi {
+    color: var(--amber);
+    font-size: 1.1rem;
+}
+
+/* History lines on the profile: the time in gray, then who and what */
+.history-line {
+    margin: 0 0 0.35rem 0;
+    font-size: 0.86rem;
+}
+.history-line span {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-right: 0.4rem;
+}

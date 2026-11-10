@@ -20,6 +20,13 @@ SUSPICIOUS_PHRASES = [
 ]
 
 
+# Each Skill Evaluation: Hr will see out of 100 score as well as indiviual score of each skill as well
+class SkillScore(BaseModel):
+    skill: str
+    level: int = Field(ge=0, le=5)
+    proof: str
+
+
 # The answer the AI must give back
 class CVResult(BaseModel):
     total_score: int = Field(ge=0, le=100)
@@ -29,6 +36,7 @@ class CVResult(BaseModel):
     education: int = Field(ge=0, le=5)
     leadership: int = Field(ge=0, le=5)
     other: int = Field(ge=0, le=5)
+    skill_scores: list[SkillScore]
     strengths: list[str]
     weak_points: list[str]
     missing_skills: list[str]

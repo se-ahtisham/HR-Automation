@@ -1,0 +1,188 @@
+/* dashboard.css: only for the dashboard page */
+
+/* ---------- Purple welcome banner ---------- */
+.st-key-hero {
+    background: linear-gradient(120deg, #8E7CF7 0%, #6C5CE7 55%, #5A3FD6 100%);
+    border-radius: 24px;
+    padding: 1.6rem 2rem;
+    box-shadow: 0 20px 40px rgba(108, 92, 231, 0.30);
+    color: white;
+    overflow: hidden;
+}
+.hero-hi {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+.hero-title {
+    margin: 0.3rem 0;
+    padding: 0;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: white;
+}
+.hero-sub {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+/* The links in the banner look like see-through buttons */
+.st-key-hero a {
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 12px;
+    padding: 0.5rem 1.1rem;
+    justify-content: center;
+}
+/* The text block in the banner */
+.st-key-hero [data-testid="stVerticalBlock"] {
+    gap: 0.4rem;
+}
+.st-key-hero a:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+.st-key-hero a p, .st-key-hero a span {
+    color: white !important;
+    font-weight: 500;
+}
+.hero-art {
+    width: 100%;
+    max-height: 160px;
+    filter: drop-shadow(0 12px 20px rgba(30, 10, 80, 0.3));
+}
+
+/* ---------- Table ---------- */
+.nice-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+.nice-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 0.6rem 0.5rem;
+    background: #F7F7FD;
+}
+.nice-table th:first-child { border-radius: 10px 0 0 10px; width: 46%; }
+.nice-table th:last-child  { border-radius: 0 10px 10px 0; }
+.nice-table td {
+    padding: 0.7rem 0.5rem;
+    border-bottom: 1px solid #F2F2F9;
+}
+.nice-table tr:last-child td {
+    border-bottom: none;
+}
+.who {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+.who small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+.no-score {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+/* A small number with a bar under it */
+.mini-score b {
+    font-size: 0.95rem;
+}
+.mini-track {
+    width: 80px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--ring-empty);
+    margin-top: 0.25rem;
+}
+.mini-track div {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #A78BFA, #6C5CE7);
+}
+
+/* ---------- Pipeline steps under the gauge ---------- */
+.steps {
+    margin-top: 0.4rem;
+}
+.step {
+    margin: 0.7rem 0;
+}
+.step-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+.step-top b {
+    color: var(--text);
+}
+.step-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--ring-empty);
+    margin-top: 0.3rem;
+}
+.step-track div {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--primary);
+}
+.step:last-child .step-track div {
+    background: var(--red);
+}
+
+.count {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-radius: 999px;
+    padding: 0.05rem 0.55rem;
+    font-size: 0.75rem;
+    margin-left: 0.3rem;
+}
+
+/* ---------- Timeline of recent activity, side by side ---------- */
+.timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    position: relative;
+}
+.timeline li {
+    position: relative;
+    padding-top: 1.1rem;
+    border-top: 2px solid #E7E4FD;
+    font-size: 0.84rem;
+}
+/* The small dot on the line */
+.timeline li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -7px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 3px solid white;
+    box-shadow: 0 0 0 1px #E7E4FD;
+}
+.timeline .time {
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+.timeline p {
+    margin: 0.2rem 0 0 0;
+    padding-right: 0.6rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+}

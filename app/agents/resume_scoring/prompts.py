@@ -13,6 +13,8 @@ Then:
 - List the strengths, weak points and missing skills for this job.
 - Missing skills must come only from the "Skills to check" list.
 - Copy 2 to 4 short proof lines exactly from the CV.
+- Rate each skill in "Skills to check" from 0 to 5, with a short proof line or "not found".
+
 
 Rules:
 - Use only the CV text. Copy short proof lines exactly from it.

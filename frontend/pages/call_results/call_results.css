@@ -1,0 +1,63 @@
+/* call_results.css: only for the Call results page */
+
+.call-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+}
+.call-meta {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin: 0.2rem 0 0.4rem 0;
+}
+.checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #F0F1F6;
+}
+
+/* ---------- Chat bubbles ---------- */
+.chat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.bubble {
+    max-width: 80%;
+    padding: 0.6rem 0.9rem;
+    border-radius: 14px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+.bubble small {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.7;
+    margin-bottom: 0.15rem;
+}
+/* The AI is on the left, in gray */
+.bubble-ai {
+    align-self: flex-start;
+    background: #F1F2F6;
+    border-bottom-left-radius: 4px;
+}
+/* The candidate is on the right, in purple */
+.bubble-candidate {
+    align-self: flex-end;
+    background: var(--primary);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+/* The 3 summary cards have a colored line on the left */
+.st-key-card-said    { border-left: 4px solid var(--green); }
+.st-key-card-unclear { border-left: 4px solid var(--amber); background: #FFFBEB; }
+.st-key-card-thinks  { border-left: 4px solid var(--violet); }
+
+.st-key-card-decision {
+    border-top: 4px solid var(--primary);
+}

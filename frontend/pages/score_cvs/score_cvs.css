@@ -1,0 +1,72 @@
+/* score_cvs.css: only for the Upload and score CVs page. The result styles are in frontend/score_view.css */
+
+/* ---------- The job cards ---------- */
+[class*="st-key-job-card-"] {
+    background: white;
+    border: 1px solid #E6E8F0;
+    border-radius: 16px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.6rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+[class*="st-key-job-card-"]:hover {
+    border-color: var(--primary);
+}
+/* The picked job has a purple border and a soft purple background */
+[class*="st-key-job-card-"][class*="-picked"] {
+    border: 2px solid var(--primary);
+    background: #F6F3FF;
+    box-shadow: 0 4px 14px rgba(106, 79, 224, 0.15);
+}
+.job-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.3rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.job-meta {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+.job-meta .mi {
+    color: var(--primary);
+    font-size: 1rem;
+    vertical-align: -3px;
+}
+
+/* The chosen job's skills */
+.job-summary .label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0.3rem 0 0.4rem 0;
+}
+
+/* The saved candidate card */
+.st-key-card-saved {
+    border-left: 4px solid var(--primary);
+}
+.saved-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
+}
+.saved-name small {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+.saved-meta {
+    margin: 0.35rem 0;
+    font-size: 0.88rem;
+}
+.saved-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+}

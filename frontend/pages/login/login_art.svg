@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 760" preserveAspectRatio="xMidYMid slice" class="art-svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5B4A9B"/>
+      <stop offset="0.28" stop-color="#B07FB0"/>
+      <stop offset="0.5" stop-color="#F0A98F"/>
+      <stop offset="0.68" stop-color="#F8D29A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF6DA" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#FFE7B0" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#FFE7B0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8B7B8"/>
+      <stop offset="0.5" stop-color="#C8B3EA"/>
+      <stop offset="1" stop-color="#9D8BD8"/>
+    </linearGradient>
+    <linearGradient id="cliff" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#CFC4F2"/>
+      <stop offset="0.5" stop-color="#8B7FD0"/>
+      <stop offset="1" stop-color="#4A3F8C"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3B3277"/>
+      <stop offset="1" stop-color="#1F1A45"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.55" stop-color="#1A1538" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1A1538" stop-opacity="0.75"/>
+    </linearGradient>
+  </defs>
+
+  <!-- sky and sun -->
+  <rect width="600" height="760" fill="url(#sky)"/>
+  <circle cx="150" cy="330" r="190" fill="url(#glow)"/>
+  <circle cx="150" cy="330" r="72" fill="#FFF3D1"/>
+
+  <!-- far mountains -->
+  <path d="M0 450 L90 400 L170 430 L260 380 L350 425 L430 395 L520 430 L600 405 L600 480 L0 480 Z" fill="#B08CC0" opacity="0.75"/>
+  <path d="M0 470 L120 430 L210 455 L300 420 L420 460 L520 440 L600 455 L600 500 L0 500 Z" fill="#8E73B8"/>
+
+  <!-- lake with light lines -->
+  <rect y="495" width="600" height="120" fill="url(#lake)"/>
+  <rect x="40" y="520" width="140" height="3" rx="1.5" fill="#FFFFFF" opacity="0.45"/>
+  <rect x="220" y="545" width="90" height="3" rx="1.5" fill="#FFFFFF" opacity="0.35"/>
+  <rect x="90" y="572" width="60" height="3" rx="1.5" fill="#FFFFFF" opacity="0.3"/>
+
+  <!-- the big cliff on the right -->
+  <path d="M600 330 C520 335 430 350 360 395 C330 415 345 440 390 445 C450 452 470 480 455 520 C440 565 470 620 600 640 Z" fill="url(#cliff)"/>
+  <path d="M600 330 C540 333 470 345 410 370 C470 372 540 380 600 395 Z" fill="#E4DCFA" opacity="0.8"/>
+  <path d="M600 470 C560 480 520 520 525 570 C530 610 560 630 600 640 Z" fill="#3A3080" opacity="0.6"/>
+
+  <!-- leaves on top of the cliff -->
+  <g fill="#2A2350">
+    <path d="M470 345 C480 300 520 290 540 320 C525 315 505 320 495 345 Z"/>
+    <path d="M500 343 C515 310 545 305 560 330 C545 325 525 330 515 345 Z"/>
+    <path d="M560 340 C565 300 590 285 600 290 L600 340 Z"/>
+  </g>
+
+  <!-- ground in front -->
+  <path d="M0 620 C120 590 260 600 380 630 C470 652 540 650 600 640 L600 760 L0 760 Z" fill="url(#ground)"/>
+
+  <!-- pine trees -->
+  <g fill="#17132F">
+    <path d="M110 700 L140 560 L170 700 Z"/>
+    <path d="M118 650 L140 590 L162 650 Z"/>
+    <rect x="137" y="695" width="6" height="30"/>
+    <path d="M190 715 L215 600 L240 715 Z"/>
+    <rect x="212" y="710" width="6" height="25"/>
+    <path d="M250 705 L285 540 L320 705 Z"/>
+    <path d="M260 640 L285 575 L310 640 Z"/>
+    <rect x="282" y="700" width="6" height="35"/>
+    <path d="M340 720 L362 630 L384 720 Z"/>
+    <rect x="359" y="715" width="6" height="22"/>
+    <path d="M30 725 L52 640 L74 725 Z"/>
+  </g>
+
+  <!-- dark fade at the bottom, so the white text is easy to read -->
+  <rect width="600" height="760" fill="url(#shade)"/>
+</svg>

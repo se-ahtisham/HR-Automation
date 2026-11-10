@@ -4,6 +4,14 @@
 chroma_db/
 __pycache__/
 sample_data/resumes/Muhammad_Ahtisham_CV.pdf
+<<<<<<< HEAD
+=======
+data/cvs/
+
+# Test files made by tests/full_run.py
+tests/test.db
+tests/test_cvs/
+>>>>>>> agent
 
 # My notes stay on my computer only. Every .md file is ignored, except README.md (the GitHub front page)
 *.md
