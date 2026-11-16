@@ -2,6 +2,7 @@
 #   uv run python -m app.agents.script_agent.setup_agent
 # The first run prints the new agent id. I put it in .env as ELEVENLABS_AGENT_ID
 import os
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from elevenlabs import AgentPlatformSettingsRequestModel, ConversationalConfig, ElevenLabs
@@ -22,26 +23,33 @@ conversation_config = ConversationalConfig.model_validate({
             "prompt": SYSTEM_PROMPT,
             "llm": "gemini-2.5-flash",
             "max_tokens": 150,
-            # Lets the agent hang up when the questions are done
-            # end_call: hang up when the questions are done. voicemail_detection: hang up on an answering machine
+            # end_call: the agent ends the talk when the questions are done.
+            # voicemail_detection was for phone calls (removed 16 Nov). An update keeps what I leave out, so None deletes it
             "built_in_tools": {
                 "end_call": {"name": "end_call", "params": {"system_tool_type": "end_call"}},
-                "voicemail_detection": {"name": "voicemail_detection", "params": {"system_tool_type": "voicemail_detection"}},
+                "voicemail_detection": None,
             },
         },
     },
     # The cheapest English voice
     "tts": {"voice_id": "EXAVITQu4vr4xnSDxMaL", "model_id": "eleven_flash_v2"},
-    # Low limit: a call stops after 3 minutes
-    "conversation": {"max_duration_seconds": 180},
+    # Low limit: a call stops after 72 seconds (1.2 minutes), so the free ElevenLabs minutes (~15 a month) give about 10 calls
+    "conversation": {"max_duration_seconds": 72},
 })
 
-platform_settings = AgentPlatformSettingsRequestModel.model_validate({
+settings: dict = {
     # After the call, ElevenLabs pulls these answers out of the talk
     "data_collection": DATA_TO_COLLECT,
     # Low limit: 1 call at a time, 20 calls a day, never pay extra
     "call_limits": {"agent_concurrency_limit": 1, "daily_limit": 20, "bursting_enabled": False},
-})
+}
+
+# The browser talk (16 Nov): only my own computer and my online website may start the agent.
+# APP_URL = the address in .env (localhost), ONLINE_APP_URL = the Streamlit address (add it after the first deploy)
+hosts = {"localhost"} | {str(urlparse(os.environ[name]).hostname) for name in ("APP_URL", "ONLINE_APP_URL") if os.environ.get(name)}
+settings["auth"] = {"allowlist": [{"hostname": host} for host in sorted(hosts)]}
+
+platform_settings = AgentPlatformSettingsRequestModel.model_validate(settings)
 
 agent_id = os.environ.get("ELEVENLABS_AGENT_ID")
 if agent_id:

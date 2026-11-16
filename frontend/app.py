@@ -33,7 +33,14 @@ todo = st.Page("pages/todo/todo.py", title="HR to-do list", icon=":material/chec
 employees = st.Page("pages/employees/employees.py", title="Employees", icon=":material/badge:")
 settings = st.Page("pages/settings/settings.py", title="Settings", icon=":material/settings:")
 
+ask_questions = st.Page("pages/ask_questions/ask_questions.py", title="Ask questions", icon=":material/record_voice_over:")
+
 user = st.session_state.user
+
+# A candidate's secret link (?token=...): only the Ask questions page, never the HR pages
+if user is None and st.query_params.get("token"):
+    st.navigation([ask_questions], position="hidden").run()
+    st.stop()
 
 # Not logged in: show only the login page
 if user is None:

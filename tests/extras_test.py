@@ -9,6 +9,7 @@ from pathlib import Path
 
 sys.path[:0] = [str(Path(__file__).parents[1]), str(Path(__file__).parents[1] / "frontend")]
 os.environ["SMTP_EMAIL"] = ""          # MOCK email: set BEFORE importing score_email
+os.environ["APP_URL"] = ""   # no browser link: these tests use the pretend call (web_call_test.py tests the link)
 sys.stdout.reconfigure(encoding="utf-8")
 
 from app.agents.job_writer.agent import write_job_post

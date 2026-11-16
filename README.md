@@ -66,7 +66,7 @@ But HR always has the final say. There are **3 stop points** where the app waits
 - ✅ HR can approve, decline or change the AI's advice, and write a reason
 - 👥 HR can add, edit and turn off employees (interviewers, managers)
 - ⚙️ HR can change the scheduling rules (interview length, work hours and more)
-- 📞 Real phone calls with **ElevenLabs** voice AI, or a pretend call for demos
+- 🎙️ A voice talk with the **ElevenLabs** AI agent in the candidate's browser (from a private link), or a pretend call for demos
 - 📝 Call summaries keep "what the candidate said" apart from "what the AI thinks"
 - 📅 Finds interview times and gets the time zones right
 - ✉️ Writes the invite email, but sends it only after HR says yes *(built 6 Nov: Agent 3 reads the candidate's times from the call, finds free interviewers inside the Settings rules, writes the invite; HR picks a time, edits, and clicks Approve & send; a failed send can be resent; no time → an HR to-do)*
@@ -203,21 +203,19 @@ The app compares the candidate's level with the required level, like "Python: ha
 
 ### Agent 2: The Phone Screener 📞
 
-**Job:** Call the candidate and ask a few simple job questions.
+**Job:** Talk to the candidate in the browser and ask a few simple job questions.
 
 **It gives back:** whether the call happened, whether the person agreed to recording, the questions and answers, when the person is free, questions without a clear answer, a short summary, and a suggested next step for HR.
 
 #### Rules Agent 2 must follow
 - Say **"I am an AI assistant"** at the start, and explain why it's calling.
-- Ask **"Is it okay if I record this call?"** If the person says no, offer another way (like a call with a real person).
+- Ask **"Is it okay if I ask you 3 short questions?"** and say the talk is recorded. If the person says no, offer another way (like a call with a real person).
 - Ask **only** job questions: experience, notice period, work style and so on.
 - **Never** ask about age, religion, family, health, race or politics.
 - If the person wants a real human, stop and pass it to HR.
-- If nobody picks up, try again, but only up to the limit.
-- If it reaches **voicemail**, leave a short polite message (no job details) and mark "No answer".
-- If the **line is bad** and it can't hear well, end politely and mark the answers "unclear".
-- If the person needs **another language** or has **trouble using a phone call**, end politely and tell HR to offer another way (for example an email form or a call with a real person).
-- If the person says **"stop"**, end the call right away and mark it in the history.
+- If the candidate doesn't talk to the agent, HR can **send the link again**.
+- If the person needs **another language** or **can't talk now**, end politely and tell HR to offer another way (for example an email form or a call with a real person).
+- If the person says **"stop"**, end the talk right away and mark it in the history.
 - **Never** make up an answer. If an answer is unclear, mark it for HR.
 - **It can never reject anyone.** HR decides.
 
@@ -478,7 +476,6 @@ stateDiagram-v2
 | Language | Python 3.12 | The coding language |
 | Package manager | **uv** | Installs Python and the tools into `.venv` |
 | Screens | **Streamlit** | Makes the HR web pages, in `frontend/`. Each page has its own `.css` file. ✅ Decided |
-| Webhooks | **FastAPI** | Only receives data from outside my app: ElevenLabs call results. *(The Day 11 online CV form was dropped on 6 Nov.)* The pages call Python directly. ✅ Decided |
 | Steps and HR stops | **LangGraph** | Controls the flow and waits for HR |
 | Talking to the AI | **LangChain** | Sends prompts and gets neat answers back |
 | AI model | **Groq** (with `langchain-groq`) | The "brain". The model name is set in `.env` |
@@ -488,7 +485,7 @@ stateDiagram-v2
 | Online CV form | *(to be chosen)* | Where candidates send their CV |
 | Database | **SQLite** + hand-written SQL | Saves everything in one file. I write the tables, queries and indexes myself. SQLAlchemy only runs them with `text()`. ✅ Decided |
 | Reading resumes | **MarkItDown** | A Microsoft library that pulls the words out of PDF and Word files with one simple call |
-| Phone calls | **ElevenLabs** ✅ Decided 5 Nov | Voice AI agent. The same 4 questions for every job: congratulations, available date and time, previous job, why shift. The **script agent** phones the candidate (Twilio number in ElevenLabs) when HR clicks Call, and saves the answers and a summary of the call. Low limits: 3 min per call, 20 calls a day. Notes: `information/elevenlabs.md` |
+| Voice talk | **ElevenLabs** ✅ Decided 5 Nov, browser since 16 Nov | Voice AI agent. The same 4 questions for every job: congratulations, available date and time, previous job, why shift. HR sends the candidate a private link; the **script agent** talks to them on my website (no phone, no Twilio) and the answers and a summary are saved. Low limits: 72 s per talk, 20 a day. Notes: `information/elevenlabs.md` |
 | Calendar and email | Pretend (mock) versions | Fake versions for safe testing |
 | Tests | pytest | Checks that the code works |
 
@@ -509,7 +506,6 @@ stateDiagram-v2
 ```
 HR_Automation/
 ├── app/
-│   ├── api/              # FastAPI, only for the ElevenLabs webhook (main.py for now)
 │   ├── agents/           # The 3 AI helpers, plus the AI Job Post Writer
 │   │   ├── resume_scoring/   # Agent 1, and reader.py (reads PDF and Word files)
 │   │   ├── job_writer/       # ⭐ Short idea -> full job draft (own Groq key)
@@ -552,7 +548,7 @@ HR_Automation/
 - [uv](https://docs.astral.sh/uv/), a fast tool that installs Python and Python packages
 - Git
 - A **Groq** API key. An API key is like a password for the AI.
-- *(optional)* An ElevenLabs account, for real phone calls
+- *(optional)* An ElevenLabs account, for the real voice talk
 
 ### Set it up
 
@@ -574,13 +570,32 @@ uv sync
 # Start the app. The pages call the Python code directly, so this is the only command
 uv run streamlit run frontend/app.py
 
-# Later, only for the ElevenLabs results webhook (the Day 11 online CV form was dropped on 6 Nov):
-# uv run uvicorn app.api.main:app --reload
 ```
 
 Then open the HR screens: http://localhost:8501
 
 ---
+
+## 🌐 Online: the browser talk (16 Nov)
+
+The app runs on **Streamlit Community Cloud** with a **Turso** database (SQLite on a server). Vercel can't run Streamlit or keep a database file, so it isn't used.
+
+**How a candidate is screened without a phone:**
+
+1. HR approves the candidate for calling, then clicks **Send the link to <email>**.
+2. The candidate gets an email with a private link to my app (a long secret code, no password).
+3. The link opens only the **Ask questions** page. The ElevenLabs agent asks the same 4 questions and the available date and time (about 1 minute).
+4. The candidate clicks **I have finished** (or HR clicks **Get the answers**). The answers and a short summary are saved, and HR decides the next step.
+
+**Deploy (once):**
+
+1. Turso: make a database, then make the tables with `uv run python -m app.core.database.init_db` (with `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` set).
+2. Streamlit Community Cloud: New app → this repo → main file `frontend/app.py` → Python 3.12.
+3. Paste the keys into **App settings → Secrets** (the names in the table below; never in the code).
+4. Set `APP_URL` to the app's address, then run `uv run python -m app.agents.script_agent.setup_agent` so only my website can start the agent.
+5. The online database starts empty: make the first HR account on the login page.
+
+`requirements.txt` is only for the host. It is made from `uv.lock` with `uv export --format requirements-txt --no-hashes --no-dev --no-emit-project -o requirements.txt`.
 
 ## 🔑 Secret keys (.env)
 
@@ -599,21 +614,19 @@ The `.env` file holds secret keys. **Never upload it to GitHub.**
 | `USE_MOCK_CALLS` | `true` = pretend call, `false` = real ElevenLabs call | `true` |
 | `ELEVENLABS_API_KEY` | The password for ElevenLabs | `...` |
 | `ELEVENLABS_AGENT_ID` | The ID of my voice agent in ElevenLabs | `...` |
-| `ELEVENLABS_PHONE_NUMBER_ID` | My Twilio number, imported in ElevenLabs. Empty = pretend calls (MOCK), typed by HR | `...` |
-| `TEST_PHONE_NUMBERS` | The only numbers a real call may go to (my test phones), comma between them | `+923001234567` |
-| `ELEVENLABS_WEBHOOK_SECRET` | Checks that a "call ended" message really came from ElevenLabs | `...` |
 | `SMTP_EMAIL` | The Gmail address that sends the CV Match Score email. Empty = MOCK (not really sent). Works since 6 Nov | `...` |
 | `SMTP_APP_PASSWORD` | A Gmail **app password** (not my normal password) | `...` |
-| `ELEVENLABS_PHONE_NUMBER_ID` | The phone number ElevenLabs calls from | `...` |
-| `ELEVENLABS_WEBHOOK_SECRET` | Checks that call notes really came from ElevenLabs | `...` |
-| `FORM_WEBHOOK_SECRET` | Checks that new CVs really came from my online form | `...` |
+| `APP_URL` | My app's web address. When set, HR sends the candidate a **link** and the agent talks to them in the browser. Locally `http://localhost:8501`; online the Streamlit address (in Secrets). Empty = pretend call (MOCK) | `http://localhost:8501` |
+| `ONLINE_APP_URL` | *(only in `.env`)* The Streamlit address, so `setup_agent.py` lets my online site start the agent too | `https://nexora-hire.streamlit.app` |
+| `TURSO_DATABASE_URL` | The online database (Turso). Empty = my SQLite file from `DATABASE_URL` | `libsql://....turso.io` |
+| `TURSO_AUTH_TOKEN` | The password for the Turso database | `...` |
 | `USE_MOCK_CALENDAR` | Use the pretend calendar | `true` |
 | `USE_MOCK_EMAIL` | Use the pretend email (saves it, doesn't really send) | `true` |
 | `MAX_UPLOAD_MB` | Biggest resume file allowed | `5` |
 | `LANGSMITH_API_KEY` | *(optional)* Lets you watch the AI's steps while fixing bugs | `...` |
 | `LOG_LEVEL` | How much detail to write in logs | `INFO` |
 
-Scheduling rules (time zone, interview length, call tries) are **not** in `.env`. HR changes them on the **Settings page**.
+Scheduling rules (time zone, interview length, notice) are **not** in `.env`. HR changes them on the **Settings page**.
 
 ---
 
@@ -622,33 +635,38 @@ Scheduling rules (time zone, interview length, call tries) are **not** in `.env`
 | Service | For testing (default) | Real version (optional) |
 |---|---|---|
 | AI model | Real API | — |
-| Phone calls | **Pretend call** (you type the answers) | **ElevenLabs** voice call |
+| Voice talk | **Pretend call** (you type the answers, when `APP_URL` is empty) | **ElevenLabs** agent in the browser, from a private link |
 | Online CV form | *(to be chosen)* | *(to be chosen)* |
 | Calendar | **Pretend calendar** (built from employee available times and busy times) | Google or Outlook calendar |
 | Email | **Pretend email** (saved, not really sent) | Gmail, Outlook or SMTP |
 
 Every pretend part has a **MOCK** label on the screen, so nobody gets confused.
 
-### How the ElevenLabs call works
+### How the ElevenLabs talk works
 
-1. I make a voice agent in ElevenLabs and give it rules: say it's an AI, ask about recording, and ask only job questions.
-2. I connect a phone number to it (for example through Twilio).
-3. My app tells ElevenLabs: "Call this person, for this job, with these questions."
-4. When the call ends, ElevenLabs sends the call text back to my app. This is called a "webhook". The app checks the secret key to make sure it's really from ElevenLabs.
-5. Agent 2 turns the call text into neat answers and a summary for HR.
+1. I made a voice agent in ElevenLabs with rules: say it's an AI, ask if it's okay, and ask only the 4 job questions.
+2. HR approves a candidate and clicks **Send the link**. The candidate gets an email with a private link to my website.
+3. The link opens the **Ask questions** page. The agent talks to the candidate there, in the browser (about 1 minute).
+4. When they click **I have finished** (or HR clicks **Get the answers**), my app finds the talk on ElevenLabs and saves the answers and a summary for HR.
 
-> ⚠️ While testing, **only call your own phone** or a friend who said yes. Never call real candidates.
+> ⚠️ While testing, **only send links to your own email** or a friend who said yes. Never to real candidates.
 
 ---
 
 ## 🧪 Tests
 
-```bash
-uv run pytest                     # run all tests
-uv run pytest tests/acceptance    # run the tests for AC-01 to AC-12
+Every test uses its own test database, never my real one (PowerShell):
+
+```powershell
+$env:DATABASE_URL = "sqlite:///./tests/test.db"; uv run python -m app.core.database.init_db
+uv run python tests/full_run.py all     # the whole flow: job → CV → score → talk → interview (20 checks)
+uv run python tests/calling_test.py     # pretend calls, call problems → HR to-dos, saved once (8 checks)
+uv run python tests/extras_test.py      # settings, move or cancel an interview (15 checks)
+uv run python tests/web_call_test.py    # the browser talk: secret link, Ask questions page (25 checks)
 ```
 
-The results will be written in `docs/test_results.md` *(planned)*.
+Make a fresh `tests/test.db` before each file. `tests/restart_run.py` (6 checks) runs after `full_run.py first`.
+With `$env:TURSO_DATABASE_URL = "tests/test.db"` the same tests run through the Turso driver (all 74 pass both ways).
 
 ---
 

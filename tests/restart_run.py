@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path[:0] = [str(Path(__file__).parents[1]), str(Path(__file__).parents[1] / "frontend")]
 
 os.environ["SMTP_EMAIL"] = ""      # MOCK email
+os.environ["APP_URL"] = ""   # no browser link: these tests use the pretend call (web_call_test.py tests the link)
 
 import app.core.database.uploaded_cv as uploaded_cv
 from app.agents.resume_scoring.reader import FileProblem
@@ -66,8 +67,8 @@ after = {
     "emails": get_one("SELECT COUNT(*) AS n FROM communication_logs").n,
 }
 check("R5 nothing new was saved or sent", after == before, after)
-check("R6 phone call not sent twice", True, "SKIPPED: the calling agent is the last task. The Call button only shows "
-      "while the status is Approved for Calling, and calling moves it on, so it can't be pressed twice")
+# (The old "R6 phone call not sent twice" was only a SKIPPED placeholder; removed on 16 Nov with the phone calls.
+#  Saving a talk twice is tested in calling_test.py and web_call_test.py: "Already saved")
 
 for status, name, info in results:
     print(f"{status}  {name}  ->  {info}".encode("ascii", "replace").decode())
