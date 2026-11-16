@@ -1,11 +1,11 @@
-# Candidates: every candidate with their score. HR approves for calling (HR stop #1), then the script agent calls them
+# Candidates: every candidate with their score. HR approves for calling (HR stop #1), then the script agent talks to them
 import json
 from html import escape
 
 import streamlit as st
 
-from app.agents.script_agent.agent import call_candidate, calls_are_real, get_call_result, is_test_number
-from app.agents.script_agent.save_call import save_call_result, save_call_started, save_no_answer, save_pretend_call
+from app.agents.script_agent.save_call import save_pretend_call
+from app.agents.script_agent.web_call import save_web_call, send_call_link, web_calls_on
 from app.core.audit import list_history
 from app.core.candidates import (approve_for_calling, approve_for_interview, decline, delete_candidate, fix_candidate,
                                  list_candidates, saved_score)
@@ -105,56 +105,54 @@ if c is not None:
                 else:
                     st.error("Please write a reason first.")
 
-    # ---------- The script agent phones the candidate (or HR types a pretend call) ----------
+    # ---------- The script agent talks to the candidate: a browser link (APP_URL set), or HR types a pretend call ----------
     if status == "Approved for Calling":
         with st.container(key="card-decision"):
-            st.html(card_title("call", "Call the candidate") +
+            st.html(card_title("record_voice_over", "Talk to the candidate") +
                     '<p class="hint">The script agent asks the 4 questions, then gives HR a summary.</p>')
-            if not calls_are_real():
-                # No Twilio number in .env yet: HR types what the candidate said (MOCK)
-                st.info("MOCK: no phone number in .env yet, so this is a pretend call. Type what the candidate said.",
+            if web_calls_on():
+                # The browser talk: the candidate gets a secret link and talks to the agent on my website
+                if not c["email"]:
+                    st.warning("No email was found in this CV. Add it with Fix details.", icon=":material/mail:")
+                elif st.button(f"Send the link to {c['email']}", type="primary", icon=":material/send:", width="stretch"):
+                    sent = send_call_link(c["id"], user["email"])
+                    if sent == "Failed":
+                        st.error("The email could not be sent. Check the Gmail keys and try again.", icon=":material/error:")
+                    else:
+                        st.toast(f"Link sent ({sent}).", icon=":material/send:")
+                        st.rerun()
+            else:
+                # No APP_URL in .env: HR types what the candidate said (MOCK), to test the rest of the app
+                st.info("MOCK: no APP_URL in .env, so no link can be sent. Type what the candidate said.",
                         icon=":material/science:")
-                consent = st.checkbox("The candidate agreed to the call", value=True, key="mock_consent")
+                consent = st.checkbox("The candidate agreed to the talk", value=True, key="mock_consent")
                 when = st.text_input("Available date and time", placeholder="Tuesday afternoon", key="mock_when")
                 previous = st.text_input("Previous job", key="mock_previous")
                 why = st.text_input("Why they want to shift", key="mock_why")
                 wants_human = st.checkbox("Asked for a human", key="mock_human")
-                other_way = st.checkbox("Needs another language, or can't do a phone call", key="mock_other")
+                other_way = st.checkbox("Needs another language, or can't talk now", key="mock_other")
                 if st.button("Save pretend call", type="primary", icon=":material/save:", width="stretch"):
                     save_pretend_call(c["id"], {"consent_given": consent, "available_date_time": when, "previous_job": previous,
                                                 "reason_for_shift": why, "wants_human": wants_human,
                                                 "needs_other_way": other_way}, user["email"])
                     st.rerun()
-            elif not c["phone"]:
-                st.warning("No phone number was found in this CV. Add it with Fix details.", icon=":material/phone_disabled:")
-            elif not is_test_number(c["phone"]):
-                st.warning(f"{c['phone']} is not in TEST_PHONE_NUMBERS in .env. Real calls only go to my test numbers.",
-                           icon=":material/block:")
-            elif st.button(f"Call {c['phone']}", type="primary", icon=":material/call:", width="stretch"):
-                save_call_started(c["id"], call_candidate(c["phone"], c["name"], c["job_title"]), user["email"])
-                st.rerun()
 
-    # ---------- The call is on, or just ended (real calls only) ----------
+    # ---------- The link is sent: wait for the candidate, or get the answers ----------
     if status == "Screening Pending":
         with st.container(key="card-decision"):
-            st.html(card_title("phone_in_talk", "The call is on") +
-                    '<p class="hint">When the call ends, the webhook saves the answers by itself. Or get them here.</p>')
-            if c["call_status"] == "No answer":
-                st.warning("Nobody answered the last call.", icon=":material/phone_missed:")
-                if st.button("Call again", icon=":material/call:", width="stretch"):
-                    save_call_started(c["id"], call_candidate(c["phone"], c["name"], c["job_title"]), user["email"])
+            st.html(card_title("mark_email_read", "Link sent") +
+                    '<p class="hint">The candidate talks to the agent from the link in their email. The answers are '
+                    'saved when they click "I have finished". If they forgot, get them here.</p>')
+            if st.button("Get the answers", type="primary", icon=":material/download:", width="stretch"):
+                result = save_web_call(c["id"], user["email"])
+                if result in ("Saved", "Already saved"):
                     st.rerun()
-            elif st.button("Get the call result", type="primary", icon=":material/download:", width="stretch"):
-                result = get_call_result(c["conversation_id"])
-                if result is None:
-                    st.info("The call isn't finished yet. Try again in a few seconds.", icon=":material/hourglass_top:")
-                elif result.get("no_answer"):
-                    tries, limit = save_no_answer(c["id"], c["conversation_id"], user["email"])
-                    st.toast(f"No answer (try {tries} of {limit}).", icon=":material/phone_missed:")
-                    st.rerun()
+                elif result == "No talk yet":
+                    st.info("The candidate hasn't talked to the agent yet.", icon=":material/hourglass_top:")
                 else:
-                    save_call_result(c["id"], c["conversation_id"], result, user["email"])
-                    st.rerun()
+                    st.info("The talk is still being processed. Try again in a few seconds.", icon=":material/hourglass_top:")
+            if web_calls_on() and st.button("Send the link again", icon=":material/send:", width="stretch"):
+                st.toast(f"Link sent ({send_call_link(c['id'], user['email'])}).", icon=":material/send:")
 
     # ---------- HR stop #2: after reading the call summary, approve for an interview, or decline ----------
     if status == "Screening Completed (HR Review)":

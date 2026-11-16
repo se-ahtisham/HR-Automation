@@ -39,10 +39,6 @@ with st.form("settings_form", border=False):
             max_per_day = col2.number_input("Max interviews a day (per interviewer)", 1, 20, now["max_per_day"])
 
     with right:
-        with st.container(key="card-calls"):
-            st.html(card_title("call", "Calls"))
-            call_tries = st.number_input("Call tries before giving up", 1, 5, now["call_tries"])
-
         with st.container(key="card-privacy"):
             st.html(card_title("lock", "Privacy", "mi-green"))
             keep_data_days = st.slider("Keep candidate data for (days)", 30, 365, now["keep_data_days"], step=5,
@@ -55,7 +51,7 @@ if saved:
     values = {
         "interview_minutes": interview_minutes, "break_minutes": break_minutes, "timezone": timezone,
         "meeting_type": meeting_type, "booking_days": booking_days, "notice_hours": notice_hours,
-        "time_choices": time_choices, "max_per_day": max_per_day, "call_tries": call_tries, "keep_data_days": keep_data_days,
+        "time_choices": time_choices, "max_per_day": max_per_day, "keep_data_days": keep_data_days,
     }
     try:
         changes = save_settings(values, user["email"])

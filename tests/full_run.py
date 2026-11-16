@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path[:0] = [str(Path(__file__).parents[1]), str(Path(__file__).parents[1] / "frontend")]
 
 os.environ["SMTP_EMAIL"] = ""            # MOCK email: set BEFORE importing score_email
+os.environ["APP_URL"] = ""   # no browser link: these tests use the pretend call (web_call_test.py tests the link)
 STEP = sys.argv[1] if len(sys.argv) > 1 else "all"
 
 from streamlit.testing.v1 import AppTest
@@ -102,8 +103,7 @@ if STEP in ("all", "first"):
     check("4 approved for calling", get_one("SELECT current_status FROM candidates WHERE id = :id", {"id": candidate_id}).current_status == "Approved for Calling")
     check("5 score email (MOCK)", send_score_email(candidate_id, HR) == "MOCK")
 
-    # 6. The call: a PRETEND call result (the real phone call needs Twilio, the last task)
-    check("6 real phone call", True, "SKIPPED: the calling agent is the last task (needs a Twilio number)")
+    # 6. The talk: a PRETEND result here (the real browser talk is tested in tests/web_call_test.py)
     save_call_started(candidate_id, "pretend-call-1", HR)
     save_call_result(candidate_id, "pretend-call-1", {"consent_given": True, "available_date_time": "any working day, any time",
                                                      "previous_job": "Intern at TestSoft", "reason_for_shift": "To grow",

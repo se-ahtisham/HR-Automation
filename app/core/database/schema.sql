@@ -8,11 +8,19 @@ CREATE TABLE IF NOT EXISTS candidates (
     resume_path TEXT,
     resume_text TEXT,
     current_status TEXT NOT NULL DEFAULT 'Resume Received',
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    access_token TEXT -- The secret part of the candidate's link to the Ask questions page. NULL until HR sends it
 );
 
 CREATE INDEX IF NOT EXISTS idx_candidates_status
 ON candidates (current_status);
+
+-- The candidate's secret link (16 Nov): HR approves → the app emails a link with this token → the candidate opens
+-- the Ask questions page and talks to the script agent. A column alone can't be UNIQUE in ALTER TABLE, so a
+-- UNIQUE index does it (empty tokens, NULL, are allowed many times)
+-- On an old database, add the column first: ALTER TABLE candidates ADD COLUMN access_token TEXT
+CREATE UNIQUE INDEX IF NOT EXISTS idx_candidates_access_token
+ON candidates (access_token);
 
 -- Stores the HR accounts that log in to the app.
 -- Not the same as employees: employees are the staff HR adds and schedules for interviews
@@ -146,7 +154,7 @@ CREATE TABLE IF NOT EXISTS scheduling_settings (
     time_choices INTEGER NOT NULL DEFAULT 3,
     max_per_day INTEGER NOT NULL DEFAULT 4,
     meeting_type TEXT NOT NULL DEFAULT 'Online',
-    call_tries INTEGER NOT NULL DEFAULT 2,
+    call_tries INTEGER NOT NULL DEFAULT 2, -- Not used since 16 Nov (it was for phone calls nobody answered)
     keep_data_days INTEGER NOT NULL DEFAULT 90,
     auto_score_email INTEGER NOT NULL DEFAULT 1,
     updated_by INTEGER REFERENCES employees (id),

@@ -1,0 +1,48 @@
+/* ask_questions.css: only for the candidate's Ask questions page */
+
+/* The same soft background as the login page, and no sidebar (the candidate has no menu) */
+.stApp {
+    background: var(--page);
+}
+.block-container {
+    padding-top: 4vh;
+    max-width: 760px;
+}
+[data-testid="stSidebar"],
+[data-testid="stSidebarCollapsedControl"] {
+    display: none;
+}
+
+/* ---------- One white card ---------- */
+.st-key-ask-shell {
+    background: white;
+    border-radius: 32px;
+    padding: 2rem 2.2rem;
+    box-shadow: 0 24px 60px rgba(108, 92, 231, 0.12);
+}
+.brand {
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 0;
+}
+.hello {
+    font-size: 2.2rem;
+    font-weight: 600;
+    margin: 0.4rem 0 0.2rem;
+}
+.lead {
+    color: var(--muted);
+    margin: 0 0 1.2rem;
+}
+
+/* ---------- The 3 steps and the small print ---------- */
+.steps {
+    margin: 0.4rem 0 0.8rem 1.2rem;
+    line-height: 1.8;
+}
+.note {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 0;
+}

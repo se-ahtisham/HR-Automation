@@ -17,7 +17,6 @@ class Settings(BaseModel):
     notice_hours: int = Field(24, ge=0, le=168)
     time_choices: int = Field(3, ge=1, le=10)
     max_per_day: int = Field(4, ge=1, le=20)
-    call_tries: int = Field(2, ge=1, le=5)
     keep_data_days: int = Field(90, ge=30, le=365)
 
 
@@ -42,7 +41,7 @@ def save_settings(values, hr_email):
         UPDATE scheduling_settings
         SET interview_minutes = :interview_minutes, break_minutes = :break_minutes, timezone = :timezone,
             meeting_type = :meeting_type, booking_days = :booking_days, notice_hours = :notice_hours,
-            time_choices = :time_choices, max_per_day = :max_per_day, call_tries = :call_tries,
+            time_choices = :time_choices, max_per_day = :max_per_day,
             keep_data_days = :keep_data_days, updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
     """, new)

@@ -4,14 +4,14 @@
 chroma_db/
 __pycache__/
 sample_data/resumes/Muhammad_Ahtisham_CV.pdf
-<<<<<<< HEAD
-=======
 data/cvs/
+
+# The keys for Streamlit when it runs on my computer (online they are typed into the host's Secrets box)
+.streamlit/secrets.toml
 
 # Test files made by tests/full_run.py
 tests/test.db
 tests/test_cvs/
->>>>>>> agent
 
 # My notes stay on my computer only. Every .md file is ignored, except README.md (the GitHub front page)
 *.md
